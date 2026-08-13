@@ -27,5 +27,6 @@
   "description": "Myousic — pemutar musik hitam-putih (Next.js 16 + YouTube Music)",
   "engines": {
     "node": ">=20.9.0"
-  }
+  },
+  "license": "GPL-3.0"
 }
