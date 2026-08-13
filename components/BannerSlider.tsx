@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon, I } from "./ui";
 
@@ -16,6 +16,7 @@ export interface Slide {
 export default function BannerSlider({ slides }: { slides: Slide[] }) {
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
+  const touchX = useRef<number | null>(null);
   const n = slides.length;
   if (!n) return null;
 
@@ -29,9 +30,21 @@ export default function BannerSlider({ slides }: { slides: Slide[] }) {
 
   return (
     <section
-      className="relative overflow-hidden rounded-3xl ring-1 ring-line bg-white/[0.02] mb-12 min-h-[300px] md:min-h-[380px]"
+      className="relative overflow-hidden rounded-3xl ring-1 ring-line bg-white/[0.02] mb-12 min-h-[300px] md:min-h-[400px]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
+      onTouchStart={(e) => {
+        touchX.current = e.touches[0]?.clientX ?? null;
+      }}
+      onTouchEnd={(e) => {
+        const start = touchX.current;
+        touchX.current = null;
+        const x = e.changedTouches[0]?.clientX;
+        if (start == null || x == null) return;
+        const dx = x - start;
+        if (dx > 50) setI((v) => (v - 1 + n) % n);
+        else if (dx < -50) setI((v) => (v + 1) % n);
+      }}
     >
       {slides.map((sl, idx) => (
         <div

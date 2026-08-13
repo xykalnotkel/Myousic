@@ -19,11 +19,11 @@ export function Icon({
       width={size}
       height={size}
       fill="currentColor"
-      className={className}
+      className={`fill-current shrink-0 ${className ?? ""}`}
       aria-hidden
       style={{ display: "block", flexShrink: 0 }}
     >
-      <path d={d} />
+      <path d={d} fillRule="evenodd" clipRule="evenodd" />
     </svg>
   );
 }
@@ -113,6 +113,7 @@ export function Cover({
       className={`${shape} bg-elev shrink-0 overflow-hidden relative flex items-center justify-center ${sizeClass ?? ""} ${className}`}
       style={sizeClass ? undefined : { width: size, height: size }}
     >
+      {!loaded && <div className="absolute inset-0 skeleton" />}
       <img
         src={url || fb}
         alt={title}
@@ -121,13 +122,15 @@ export function Cover({
         decoding="async"
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : "low"}
+        ref={(el) => {
+          if (el?.complete && el.naturalWidth > 0) setLoaded(true);
+        }}
         onLoad={() => setLoaded(true)}
         onError={() => {
           if (!failed) setFailed(true);
         }}
-        className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"} ${!url ? "opacity-70" : ""}`}
+        className={`w-full h-full object-cover ${!url ? "opacity-70" : ""}`}
       />
-      {!loaded && <div className="absolute inset-0 skeleton" />}
     </div>
   );
 }

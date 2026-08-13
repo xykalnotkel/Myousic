@@ -52,13 +52,11 @@ export default function PlayerBar() {
     closeFull,
     openFull,
   } = usePlayer();
-  const [pulseKey, setPulseKey] = useState(0);
   const artRef = useRef<HTMLDivElement>(null);
 
-  // beat → pulse pada cover
+  // beat → pulse pada cover (jangan remount — itu bikin gambar/ikon hilang)
   useEffect(() => {
     const onBeat = () => {
-      setPulseKey((k) => k + 1);
       const el = artRef.current;
       if (el) {
         el.classList.remove("beat-pulse");
@@ -129,7 +127,6 @@ export default function PlayerBar() {
               title={hasTrack ? "Buka Now Playing" : ""}
             >
               <div
-                key={pulseKey}
                 ref={artRef}
                 className="relative shrink-0 rounded-md overflow-hidden ring-1 ring-white/10"
               >
@@ -230,7 +227,6 @@ export default function PlayerBar() {
                 title={hasTrack ? "Buka Now Playing" : ""}
               >
                 <div
-                  key={pulseKey}
                   ref={artRef}
                   className="relative shrink-0 rounded-md overflow-hidden ring-1 ring-white/10"
                 >

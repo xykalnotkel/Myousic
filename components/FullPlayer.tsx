@@ -107,7 +107,6 @@ export default function FullPlayer({
     toggleShuffle,
     playAt,
   } = usePlayer();
-  const [pulseKey, setPulseKey] = useState(0);
   const [tab, setTab] = useState<"viz" | "lyr" | "queue" | "fx">("viz");
   const touchY = useRef<number | null>(null);
   const [styleIdx, setStyleIdx] = useState(0);
@@ -123,7 +122,6 @@ export default function FullPlayer({
 
   useEffect(() => {
     const onBeat = () => {
-      setPulseKey((k) => k + 1);
       const el = artWrapRef.current;
       if (el) {
         el.classList.remove("beat-pulse", "beat-ring");
@@ -210,7 +208,7 @@ export default function FullPlayer({
           <div className="grid lg:grid-cols-[auto_1fr] gap-10 items-start">
             {/* kiri: cover + info + kontrol */}
             <div className="flex flex-col items-center gap-5 mx-auto lg:mx-0">
-              <div key={pulseKey} ref={artWrapRef} className="rounded-2xl">
+              <div ref={artWrapRef} className="rounded-2xl">
                 <CoverArt src={art} title={current?.title} styleIdx={styleIdx} />
               </div>
 
@@ -272,20 +270,25 @@ export default function FullPlayer({
                 </button>
               </div>
 
-              {/* seek besar */}
-              <div className="w-full max-w-md flex items-center gap-3">
-                <span className="text-xs tabular-nums text-mut">{fmtDur(currentTime)}</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={duration || 0}
-                  step={0.1}
-                  value={Math.min(currentTime, duration || 0)}
-                  onChange={(e) => seek(Number(e.target.value))}
-                  className="knob flex-1"
-                  style={{ ["--fill" as any]: `${pct}%` }}
-                />
-                <span className="text-xs tabular-nums text-mut">{fmtDur(duration)}</span>
+              {/* gelombang + seek */}
+              <div className="w-full max-w-md">
+                <div className="relative h-10 mb-1 rounded-lg overflow-hidden bg-white/[0.03]">
+                  <Visualizer variant="bar" className="absolute inset-0 w-full h-full" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs tabular-nums text-mut">{fmtDur(currentTime)}</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={duration || 0}
+                    step={0.1}
+                    value={Math.min(currentTime, duration || 0)}
+                    onChange={(e) => seek(Number(e.target.value))}
+                    className="knob flex-1"
+                    style={{ ["--fill" as any]: `${pct}%` }}
+                  />
+                  <span className="text-xs tabular-nums text-mut">{fmtDur(duration)}</span>
+                </div>
               </div>
             </div>
 

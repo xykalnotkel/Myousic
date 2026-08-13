@@ -160,3 +160,9 @@ input[type="range"].knob:hover::-moz-range-thumb {
 .text-glow {
   text-shadow: 0 0 24px rgba(255, 255, 255, 0.35);
 }
+
+/* ikon SVG selalu terisi warna teks */
+svg.fill-current,
+svg.fill-current path {
+  fill: currentColor;
+}

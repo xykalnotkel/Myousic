@@ -241,7 +241,7 @@ export default function Visualizer({ variant = "bar", className, demo = false }:
       ctx.clearRect(0, 0, w, h);
 
       const an = analyser;
-      if (demo || !an) {
+      if (!live || !an) {
         synthFreq(freq, t);
         for (let i = 0; i < wave.length; i++) {
           wave[i] = 128 + Math.sin(t * 8 + i * 0.04) * 28 * (playing ? 1 : 0.35);
@@ -272,25 +272,39 @@ export default function Visualizer({ variant = "bar", className, demo = false }:
         return;
       }
 
-      // ---- BAR MODE ----
+      // ---- BAR + gelombang waktu (nyata kalau stream/analyser hidup) ----
       const N = 72;
       const bw = w / N;
-      const barW = Math.max(1, bw * 0.62);
-      const maxH = h * 0.92;
+      const barW = Math.max(1, bw * 0.58);
+      const maxH = h * 0.7;
       for (let i = 0; i < N; i++) {
-        const idx = Math.floor(Math.pow(i / N, 1.6) * 400) + 1;
+        const idx = Math.floor(Math.pow(i / N, 1.55) * 380) + 1;
         const v = freq[idx] / 255;
-        const bh = Math.max(2, v * maxH * boost * (1 + Math.sin(i * 0.9) * 0.12));
+        const bh = Math.max(2, v * maxH * boost * (1 + Math.sin(i * 0.9) * 0.1));
         const x = i * bw + (bw - barW) / 2;
         const y = h - bh;
         const grad = ctx.createLinearGradient(0, y, 0, h);
         grad.addColorStop(0, "rgba(255,255,255,0.95)");
-        grad.addColorStop(1, "rgba(255,255,255,0.14)");
+        grad.addColorStop(1, "rgba(255,255,255,0.12)");
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.roundRect(x, y, barW, bh, barW / 2);
         ctx.fill();
       }
+
+      ctx.beginPath();
+      ctx.lineWidth = Math.max(1.4, h * 0.04);
+      ctx.strokeStyle = "rgba(255,255,255,0.88)";
+      const mid = h * 0.36;
+      const amp = h * 0.26 * boost;
+      for (let x = 0; x < w; x++) {
+        const wi = Math.floor((x / w) * wave.length);
+        const s = (wave[wi] - 128) / 128;
+        const y = mid + s * amp;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
     };
     draw();
 
