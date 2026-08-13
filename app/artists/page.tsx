@@ -4,7 +4,7 @@ import { POPULAR_ARTISTS } from "@/lib/data";
 import { Cover } from "@/components/ui";
 import { bestThumb } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export default async function ArtistsPage() {
   const settled = await Promise.allSettled(

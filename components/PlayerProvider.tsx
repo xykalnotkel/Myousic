@@ -91,6 +91,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const audio = new Audio();
     audio.preload = "auto";
     audioRef.current = audio;
+    (window as any).__kainetAudio = audio; // untuk keyboard shortcut & debug
 
     audio.addEventListener("timeupdate", () => setCurrentTime(audio.currentTime));
     audio.addEventListener("durationchange", () => setDuration(audio.duration || 0));
@@ -99,8 +100,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audio.addEventListener("waiting", () => setLoading(true));
     audio.addEventListener("playing", () => setLoading(false));
     audio.addEventListener("error", () => {
-      setError("Gagal memutar lagu ini — dilewati");
       setLoading(false);
+      let msg = "Gagal memuat stream audio";
+      const aerr = (audio as any).error;
+      if (aerr) {
+        if (aerr.code === 4) msg = "Tidak ada sumber audio yang didukung — lagu mungkin dibatasi wilayah/usia";
+        else if (aerr.message) msg = aerr.message;
+      }
+      setError(`${msg}. Gunakan tombol Lewati.`);
     });
     audio.addEventListener("ended", () => {
       // dilewati ke next (auto)

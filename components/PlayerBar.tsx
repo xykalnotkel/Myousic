@@ -79,11 +79,11 @@ export default function PlayerBar() {
         e.preventDefault();
         toggle();
       } else if (e.code === "ArrowRight" && !e.shiftKey) {
-        const a = document.querySelector("audio");
-        if (a) a.currentTime = Math.min(a.duration, a.currentTime + 5);
+        const a = (window as any).__kainetAudio;
+        if (a && isFinite(a.duration)) a.currentTime = Math.min(a.duration, a.currentTime + 5);
       } else if (e.code === "ArrowLeft") {
-        const a = document.querySelector("audio");
-        if (a) a.currentTime = Math.max(0, a.currentTime - 5);
+        const a = (window as any).__kainetAudio;
+        if (a && isFinite(a.duration)) a.currentTime = Math.max(0, a.currentTime - 5);
       } else if (e.code === "ArrowUp") {
         e.preventDefault();
         setVolume(Math.min(1, volume + 0.05));
@@ -103,8 +103,8 @@ export default function PlayerBar() {
 
   return (
     <>
-      {/* bar melayang dengan jarak dari tepi layar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none px-2.5 sm:px-4 pb-2.5 sm:pb-4">
+      {/* bar melayang — di atas bottom nav di mobile, di atas tepi bawah di desktop */}
+      <div className="fixed bottom-[78px] md:bottom-4 left-0 right-0 z-40 pointer-events-none px-2.5 sm:px-4">
         <div className="pointer-events-auto mx-auto max-w-[1500px] rounded-2xl overflow-hidden ring-1 ring-white/10 bg-black/90 backdrop-blur-md shadow-[0_16px_60px_rgba(0,0,0,0.7)]">
           {error && (
             <div className="mx-4 mt-2 px-3 py-1.5 rounded-md bg-white/10 text-xs text-white flex items-center justify-between">

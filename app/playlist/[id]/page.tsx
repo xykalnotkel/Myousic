@@ -4,7 +4,7 @@ import TrackList from "@/components/TrackList";
 import { Cover } from "@/components/ui";
 import { bestThumb } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export default async function PlaylistPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

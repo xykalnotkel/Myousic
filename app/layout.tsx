@@ -69,7 +69,7 @@ export default function RootLayout({
             </header>
 
             <Sidebar />
-            <main className="relative z-10 md:pl-60 px-4 sm:px-6 md:px-8 pt-6 md:pt-8 pb-60 md:pb-44 max-w-[1500px]">
+            <main className="relative z-10 md:pl-60 px-4 sm:px-6 md:px-8 pt-6 md:pt-8 pb-[310px] md:pb-44 max-w-[1500px]">
               {children}
             </main>
 

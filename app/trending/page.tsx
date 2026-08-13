@@ -3,7 +3,7 @@ import TrackList from "@/components/TrackList";
 import { TRENDING_SONGS } from "@/lib/data";
 import type { Track } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export default async function TrendingPage() {
   // cari tiap lagu ke YouTube Music, ambil hasil terbaik

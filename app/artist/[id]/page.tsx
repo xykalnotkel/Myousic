@@ -6,7 +6,7 @@ import { Cover } from "@/components/ui";
 import { bestThumb } from "@/lib/types";
 import type { Track } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 interface ArtistAlbum {
   browseId?: string;
