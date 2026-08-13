@@ -18,6 +18,11 @@ body {
   height: 100%;
   overflow-x: hidden;
   overscroll-behavior-x: none;
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ---------- scrollbar ---------- */

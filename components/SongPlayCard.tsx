@@ -1,7 +1,7 @@
 "use client";
 
 import { usePlayer } from "./PlayerProvider";
-import { Cover } from "./ui";
+import { Cover, Icon, I } from "./ui";
 import { pickThumb } from "@/lib/thumbs";
 import type { Track } from "@/lib/types";
 
@@ -13,11 +13,16 @@ export default function SongPlayCard({ tracks, index }: { tracks: Track[]; index
   return (
     <button
       onClick={() => playContext(tracks, index)}
-      className="card-lift shrink-0 w-36 sm:w-40 rounded-xl bg-panel ring-1 ring-line p-2.5 text-left overflow-hidden"
+      className="shrink-0 w-[132px] sm:w-40 text-left"
     >
-      <Cover src={pickThumb(t.thumbnails, 240)} title={t.title} className="w-full" rounded="rounded-lg" />
-      <p className={`mt-2.5 text-sm font-semibold truncate ${on ? "text-white" : ""}`}>{t.title}</p>
-      <p className="text-[11px] text-mut truncate">{on && playing ? "Sedang diputar" : t.artist || "Lagu"}</p>
+      <div className="relative rounded-xl overflow-hidden ring-1 ring-white/10">
+        <Cover src={pickThumb(t.thumbnails, 240)} title={t.title} className="w-full" rounded="rounded-none" />
+        <span className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white text-black flex items-center justify-center shadow-lg">
+          {on && playing ? <Icon d={I.pause} size={14} /> : <Icon d={I.play} size={14} className="ml-0.5" />}
+        </span>
+      </div>
+      <p className={`mt-2 text-[13px] font-semibold truncate ${on ? "text-white" : "text-soft"}`}>{t.title}</p>
+      <p className="text-[11px] text-mut truncate">{t.artist || "Lagu"}</p>
     </button>
   );
 }

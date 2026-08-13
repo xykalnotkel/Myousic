@@ -145,51 +145,14 @@ export default async function Home() {
     <div>
       <BannerSlider slides={slides} />
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-10">
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-7">
         {MOODS.map((m) => (
           <Link
             key={m.label}
             href={m.href}
-            className="shrink-0 px-4 py-2 rounded-full bg-white text-black text-sm font-semibold"
+            className="shrink-0 px-3.5 py-1.5 rounded-full bg-white text-black text-[13px] font-semibold"
           >
             {m.label}
-          </Link>
-        ))}
-      </div>
-
-      <div className="grid sm:grid-cols-3 gap-3 mb-10">
-        {[
-          {
-            href: "/trending",
-            img: "/illustrations/hero-stage.jpg",
-            k: "Live now",
-            t: "Trending Indo",
-          },
-          {
-            href: "/search?q=lagu%20sasak&type=songs",
-            img: "/illustrations/hero-rinjani.jpg",
-            k: "NTB",
-            t: "Lagu Sasak",
-          },
-          {
-            href: "/search",
-            img: "/illustrations/hero-headphone.jpg",
-            k: "Cari",
-            t: "Judul / artis",
-          },
-        ].map((c) => (
-          <Link
-            key={c.t}
-            href={c.href}
-            className="relative overflow-hidden rounded-2xl ring-1 ring-white/10 min-h-[120px] group"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={c.img} alt="" className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-500" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-            <div className="relative p-4 flex flex-col justify-end min-h-[120px]">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-white/60">{c.k}</p>
-              <p className="text-lg font-extrabold">{c.t}</p>
-            </div>
           </Link>
         ))}
       </div>
@@ -197,10 +160,10 @@ export default async function Home() {
       <RecentRail />
 
       {trending.length > 0 && (
-        <section className="mt-12">
-          <div className="flex items-end justify-between mb-5">
+        <section className="mt-8">
+          <div className="flex items-end justify-between mb-3">
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight">Sedang ramai</h2>
+              <h2 className="text-xl font-extrabold tracking-tight">Sedang ramai</h2>
               <p className="text-mut text-sm mt-1">Trending Indonesia</p>
             </div>
             <Link href="/trending" className="text-xs text-mut hover:text-white underline underline-offset-4">
@@ -216,10 +179,10 @@ export default async function Home() {
       )}
 
       {sasak.length > 0 && (
-        <section className="mt-12">
-          <div className="flex items-end justify-between mb-5">
+        <section className="mt-8">
+          <div className="flex items-end justify-between mb-3">
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight">Dari Lombok & NTB</h2>
+              <h2 className="text-xl font-extrabold tracking-tight">Dari Lombok & NTB</h2>
               <p className="text-mut text-sm mt-1">Lagu Sasak dan sekitarnya</p>
             </div>
             <Link
@@ -237,10 +200,10 @@ export default async function Home() {
         </section>
       )}
 
-      <section className="mt-12">
-        <div className="flex items-end justify-between mb-5">
+      <section className="mt-8">
+        <div className="flex items-end justify-between mb-3">
           <div>
-            <h2 className="text-2xl font-extrabold tracking-tight">Rekomendasi untukmu</h2>
+            <h2 className="text-xl font-extrabold tracking-tight">Rekomendasi</h2>
             <p className="text-mut text-sm mt-1">Playlist pilihan YouTube Music</p>
           </div>
         </div>
@@ -270,10 +233,10 @@ export default async function Home() {
       </section>
 
       {indoArtists.length > 0 && (
-        <section className="mt-12">
-          <div className="flex items-end justify-between mb-5">
+        <section className="mt-8">
+          <div className="flex items-end justify-between mb-3">
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight">Artis Indonesia</h2>
+              <h2 className="text-xl font-extrabold tracking-tight">Artis Indonesia</h2>
               <p className="text-mut text-sm mt-1">Wajah bulat — yang sedang populer di Tanah Air</p>
             </div>
             <Link href="/artists" className="text-xs text-mut hover:text-white transition-colors underline underline-offset-4">

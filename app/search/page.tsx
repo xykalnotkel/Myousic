@@ -1,7 +1,7 @@
 "use client";
 
 // Pencarian client-side: debounce + abort + hasil lama dipertahankan saat loading (tanpa glitch)
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import TrackList from "@/components/TrackList";
@@ -111,7 +111,7 @@ function SearchPageInner() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-extrabold tracking-tight mb-5">Cari</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight mb-4">Cari</h1>
         <div className="relative max-w-2xl w-full group">
           <Icon
             d={I.search}
