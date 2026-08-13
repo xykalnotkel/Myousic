@@ -90,6 +90,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const audio = new Audio();
     audio.preload = "auto";
+    audio.crossOrigin = "anonymous";
     audioRef.current = audio;
     (window as any).__kainetAudio = audio; // untuk keyboard shortcut & debug
 
@@ -101,13 +102,26 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audio.addEventListener("playing", () => setLoading(false));
     audio.addEventListener("error", () => {
       setLoading(false);
+      const src = audio.currentSrc || audio.src;
       let msg = "Gagal memuat stream audio";
       const aerr = (audio as any).error;
       if (aerr) {
-        if (aerr.code === 4) msg = "Tidak ada sumber audio yang didukung — lagu mungkin dibatasi wilayah/usia";
+        if (aerr.code === 4) msg = "Tidak ada sumber audio yang didukung";
         else if (aerr.message) msg = aerr.message;
       }
       setError(`${msg}. Gunakan tombol Lewati.`);
+      // API stream mengembalikan JSON error (bukan audio) — ambil pesannya
+      if (src && src.includes("/api/stream/")) {
+        fetch(src, { headers: { Range: "bytes=0-400" } })
+          .then(async (r) => {
+            const ct = r.headers.get("content-type") || "";
+            if (ct.includes("json")) {
+              const j = await r.json().catch(() => null);
+              if (j?.error) setError(`${j.error}. Gunakan tombol Lewati.`);
+            }
+          })
+          .catch(() => {});
+      }
     });
     audio.addEventListener("ended", () => {
       // dilewati ke next (auto)
@@ -199,10 +213,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       }
       setLoading(true);
       try {
+        audio.crossOrigin = "anonymous";
         audio.src = `/api/stream/${encodeURIComponent(tr.id)}`;
         audio.load();
         await audio.play();
       } catch (e: any) {
+        if (e?.name === "AbortError") return;
         setError(e?.message || "Gagal memutar");
         setLoading(false);
       }
