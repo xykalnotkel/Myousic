@@ -546,8 +546,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const setVolume = useCallback(
     (v: number) => {
-      setVolumeState(Math.min(1, Math.max(0, v)));
-      if (v > 0 && muted) setMuted(false);
+      const nv = Math.min(1, Math.max(0, v));
+      setVolumeState(nv);
+      volumeRef.current = nv;
+      if (audioRef.current) audioRef.current.volume = nv;
+      ytRef.current?.setVolume(nv);
+      if (nv > 0 && muted) setMuted(false);
     },
     [muted]
   );

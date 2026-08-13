@@ -116,27 +116,19 @@ input[type="range"].knob {
 input[type="range"].knob::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: #fff;
   border: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-input[type="range"].knob:hover::-webkit-slider-thumb,
-input[type="range"].knob:active::-webkit-slider-thumb {
   opacity: 1;
 }
 input[type="range"].knob::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: #fff;
   border: none;
-  opacity: 0;
-}
-input[type="range"].knob:hover::-moz-range-thumb {
   opacity: 1;
 }
 

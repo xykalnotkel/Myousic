@@ -5,6 +5,7 @@ import { usePlayer } from "./PlayerProvider";
 import Visualizer from "./Visualizer";
 import FullPlayer from "./FullPlayer";
 import { Cover, Icon, I, Equalizer } from "./ui";
+import SoundSheet from "./SoundSheet";
 import { bestThumb, fmtDur } from "@/lib/types";
 
 function TimeBar() {
@@ -53,6 +54,7 @@ export default function PlayerBar() {
     openFull,
   } = usePlayer();
   const artRef = useRef<HTMLDivElement>(null);
+  const [soundOpen, setSoundOpen] = useState(false);
 
   // beat → pulse pada cover (jangan remount — itu bikin gambar/ikon hilang)
   useEffect(() => {
@@ -193,10 +195,9 @@ export default function PlayerBar() {
             {/* kanan: volume */}
             <div className="flex items-center justify-end gap-2 min-w-[140px]">
                 <button
-                onClick={openFull}
-                className="text-mut hover:text-white transition-colors"
-                title="Mesin suara / layar penuh"
-                disabled={!hasTrack}
+                onClick={() => setSoundOpen((v) => !v)}
+                className={`transition-colors ${soundOpen ? "text-white" : "text-mut hover:text-white"}`}
+                title="Atur suara"
               >
                 <Icon d={I.fx} size={18} />
               </button>
@@ -250,6 +251,13 @@ export default function PlayerBar() {
                 </div>
               </button>
               <div className="flex items-center gap-4 shrink-0">
+                <button
+                  onClick={() => setSoundOpen((v) => !v)}
+                  className={soundOpen ? "text-white" : "text-mut"}
+                  title="Atur suara"
+                >
+                  <Icon d={I.fx} size={18} />
+                </button>
                 <button onClick={prev} className="text-mut active:text-white transition-colors" title="Sebelumnya">
                   <Icon d={I.prev} size={20} />
                 </button>
@@ -267,6 +275,7 @@ export default function PlayerBar() {
               </div>
             </div>
           </div>
+          {soundOpen && <SoundSheet onClose={() => setSoundOpen(false)} />}
           </div>
       </div>
 
