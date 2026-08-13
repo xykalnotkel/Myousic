@@ -66,13 +66,13 @@ export const I = {
 };
 
 const FALLBACK_ARTS = [
+  "/illustrations/hero-vinyl.jpg",
+  "/illustrations/hero-headphone.jpg",
+  "/illustrations/hero-stage.jpg",
+  "/illustrations/hero-wave.jpg",
+  "/illustrations/hero-rinjani.jpg",
   "/illustrations/vinyl-wave.webp",
   "/illustrations/headphone-peaks.webp",
-  "/illustrations/cassette-garden.webp",
-  "/illustrations/speaker-notes.webp",
-  "/illustrations/turntable-orbit.webp",
-  "/illustrations/radio-galaxy.webp",
-  "/illustrations/piano-skyline.webp",
   "/illustrations/mic-bloom.webp",
 ];
 

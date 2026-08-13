@@ -167,7 +167,33 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setFxState(loadFx());
     } catch {}
 
+    const resume = () => {
+      if (!wantPlayRef.current) return;
+      try {
+        ctxRef.current?.resume?.();
+      } catch {}
+      if (engineRef.current === "audio") {
+        const a = audioRef.current;
+        if (a && a.paused && a.src) a.play().catch(() => {});
+      } else {
+        ytRef.current?.play();
+      }
+    };
+    const onVis = () => {
+      if (document.visibilityState === "visible") resume();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", resume);
+    window.addEventListener("pageshow", resume);
+    const tick = window.setInterval(() => {
+      if (wantPlayRef.current) resume();
+    }, 2500);
+
     return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", resume);
+      window.removeEventListener("pageshow", resume);
+      window.clearInterval(tick);
       audio.pause();
       audio.src = "";
       audio.remove();

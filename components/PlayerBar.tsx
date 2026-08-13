@@ -117,7 +117,7 @@ export default function PlayerBar() {
 
           {/* strip visualizer di atas bar */}
           <div className="relative h-9 bg-gradient-to-t from-black via-black/70 to-transparent">
-            <Visualizer variant="bar" className="absolute inset-0 w-full h-full opacity-90" />
+            <Visualizer className="absolute inset-0 w-full h-full opacity-90" />
           </div>
 
           {/* ===== LAYOUT DESKTOP ===== */}

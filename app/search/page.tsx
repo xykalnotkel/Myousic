@@ -221,16 +221,47 @@ function SearchPageInner() {
       )}
 
       {showEmpty && (
-        <div className="py-16 text-center text-mut">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/illustrations/headphone-peaks.webp"
-            alt=""
-            aria-hidden
-            className="w-48 mx-auto mb-5 opacity-90"
-          />
-          <p className="text-lg font-semibold text-soft">Temukan musikmu</p>
-          <p className="text-sm mt-1">Ketik di kotak pencarian untuk mulai menjelajah.</p>
+        <div className="py-8">
+          {hist.length > 0 && (
+            <div className="mb-10">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs uppercase tracking-[0.28em] text-mut">Baru dicari</p>
+                <button onClick={() => { clearSearchHistory(); setHist([]); }} className="text-xs text-mut">
+                  Hapus
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {hist.map((h) => (
+                  <span key={h} className="inline-flex items-center gap-1 rounded-full bg-white/[0.06] ring-1 ring-white/10 pl-3 pr-1 py-1">
+                    <button onClick={() => setQ(h)} className="text-sm text-soft">
+                      {h}
+                    </button>
+                    <button
+                      onClick={() => {
+                        removeSearchHistory(h);
+                        setHist(loadSearchHistory());
+                      }}
+                      className="w-6 h-6 rounded-full text-mut"
+                      aria-label="hapus"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="text-center text-mut">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/illustrations/hero-headphone.jpg"
+              alt=""
+              aria-hidden
+              className="w-full max-w-md mx-auto mb-5 rounded-2xl opacity-80 object-cover h-40"
+            />
+            <p className="text-lg font-semibold text-soft">Ketik judul yang kamu mau</p>
+            <p className="text-sm mt-1">Hasil diurutkan biar yang paling mirip di atas.</p>
+          </div>
         </div>
       )}
     </div>

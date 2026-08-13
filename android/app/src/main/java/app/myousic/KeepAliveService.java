@@ -11,11 +11,13 @@ import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.PowerManager;
 
-/** Notifikasi tetap hidup biar MIUI / Android Go tidak bunuh proses pas Home. */
+/** Notifikasi + wake lock biar MIUI Go tidak bunuh proses. */
 public class KeepAliveService extends Service {
     public static final String CH = "myousic_play";
     public static final int NID = 7;
+    private PowerManager.WakeLock wake;
 
     public static void refresh(Context ctx) {
         try {
@@ -23,6 +25,19 @@ public class KeepAliveService extends Service {
             Intent i = new Intent(app, KeepAliveService.class);
             if (Build.VERSION.SDK_INT >= 26) app.startForegroundService(i);
             else app.startService(i);
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        try {
+            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+            if (pm != null) {
+                wake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "myousic:play");
+                wake.setReferenceCounted(false);
+                wake.acquire();
+            }
         } catch (Exception ignored) {}
     }
 
@@ -47,7 +62,7 @@ public class KeepAliveService extends Service {
         if (track == null || track.trim().isEmpty()) track = "Myousic sedang berjalan";
 
         Intent open = new Intent(this, MainActivity.class);
-        open.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        open.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         PendingIntent pi = PendingIntent.getActivity(
                 this, 0, open, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -74,6 +89,16 @@ public class KeepAliveService extends Service {
                 startForeground(NID, n);
             } catch (Exception ignored) {}
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        if (wake != null && wake.isHeld()) {
+            try {
+                wake.release();
+            } catch (Exception ignored) {}
+        }
+        super.onDestroy();
     }
 
     @Override

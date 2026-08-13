@@ -57,3 +57,14 @@ export const INDO_ARTISTS: IndoArtistSeed[] = [
   { name: "Reality Club", query: "Reality Club" },
   { name: "Fourtwnty", query: "Fourtwnty" },
 ];
+
+export const MOODS: { label: string; href: string }[] = [
+  { label: "Trending", href: "/trending" },
+  { label: "Sasak", href: "/search?q=lagu%20sasak&type=songs" },
+  { label: "Lombok", href: "/search?q=lagu%20lombok&type=songs" },
+  { label: "Galau", href: "/search?q=lagu%20galau%20indonesia&type=songs" },
+  { label: "Santai", href: "/search?q=lagu%20santai%20indonesia&type=songs" },
+  { label: "Pop Indo", href: "/search?q=pop%20indonesia&type=songs" },
+  { label: "2000an", href: "/search?q=lagu%20indonesia%202000an&type=songs" },
+  { label: "Religi", href: "/search?q=lagu%20religi%20indonesia&type=songs" },
+];

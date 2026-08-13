@@ -38,7 +38,7 @@ export default async function TrendingPage() {
       <div className="relative overflow-hidden rounded-3xl ring-1 ring-line bg-white/[0.02] mb-8 min-h-[220px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/illustrations/speaker-notes.webp"
+          src="/illustrations/hero-stage.jpg"
           alt=""
           aria-hidden
           className="absolute -right-6 -bottom-8 w-64 sm:w-80 opacity-90 pointer-events-none"

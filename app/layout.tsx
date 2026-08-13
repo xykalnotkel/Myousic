@@ -9,6 +9,7 @@ import Blobs from "@/components/Blobs";
 import { Icon, I } from "@/components/ui";
 import Logo from "@/components/Logo";
 import PwaRegister from "@/components/PwaRegister";
+import Splash from "@/components/Splash";
 import Link from "next/link";
 import { BRAND, TAGLINE, APP_DESC } from "@/lib/brand";
 
@@ -54,6 +55,7 @@ export default function RootLayout({
     <html lang="id" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <PwaRegister />
+        <Splash />
         <PlayerProvider>
           <div className="relative min-h-screen">
             <Blobs />

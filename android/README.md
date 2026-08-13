@@ -3,7 +3,9 @@
 WebView yang membungkus https://myousic.vercel.app + widget layar utama.
 Dibuat khusus HP Android Go / MIUI (Redmi A2) yang sering gagal pasang PWA.
 
-**APK jadi:** `android/Myousic.apk` (atau file yang dikirim di chat).
+**APK jadi:** `android/Myousic.apk` (v1.2).
+
+Khusus Redmi A2 / Android Go: aplikasi tidak di-pause saat Home. Kalau tetap mati, Autostart ON + Battery No restrictions.
 
 ## Pasang di HP
 

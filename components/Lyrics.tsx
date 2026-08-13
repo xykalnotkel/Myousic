@@ -1,6 +1,6 @@
 "use client";
 
-// Lirik otomatis ber-progres: baris aktif menyala & auto-scroll mengikuti lagu
+// Lirik polos: baris aktif memutih halus. Tanpa skeleton, tanpa bar progres.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlayer } from "./PlayerProvider";
 
@@ -14,11 +14,11 @@ interface LyricsData {
   source?: string;
 }
 
-type State = "load" | "ok" | "none" | "err";
+type State = "idle" | "ok" | "none";
 
 export default function LyricsPanel() {
   const { current, currentTime } = usePlayer();
-  const [state, setState] = useState<State>("load");
+  const [state, setState] = useState<State>("idle");
   const [data, setData] = useState<LyricsData | null>(null);
   const lineRefs = useRef<(HTMLParagraphElement | null)[]>([]);
 
@@ -27,9 +27,10 @@ export default function LyricsPanel() {
     let cancel = false;
     if (!id) {
       setState("none");
+      setData(null);
       return;
     }
-    setState("load");
+    setState("idle");
     setData(null);
     const qs = new URLSearchParams();
     if (current?.title) qs.set("title", current.title);
@@ -46,7 +47,7 @@ export default function LyricsPanel() {
         }
       })
       .catch(() => {
-        if (!cancel) setState("err");
+        if (!cancel) setState("none");
       });
     return () => {
       cancel = true;
@@ -64,84 +65,44 @@ export default function LyricsPanel() {
     return idx;
   }, [data, currentTime]);
 
-  // auto-scroll ke baris aktif
   useEffect(() => {
     if (activeIdx >= 0) {
       lineRefs.current[activeIdx]?.scrollIntoView({ block: "center", behavior: "smooth" });
     }
   }, [activeIdx]);
 
-  if (state === "load") {
+  if (state !== "ok" || !data) {
     return (
-      <div className="space-y-3 py-4">
-        {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i} className="skeleton h-5 w-[40%]" style={{ width: `${45 + ((i * 13) % 40)}%` }} />
-        ))}
+      <div className="py-20 text-center text-mut">
+        <p className="text-3xl mb-3 opacity-30">♪</p>
+        <p className="text-sm">{state === "idle" ? " " : "Lirik tidak tersedia"}</p>
       </div>
     );
   }
-  if (state === "err") {
-    return (
-      <div className="py-16 text-center text-mut text-sm">
-        Gagal memuat lirik. Periksa koneksi.
-      </div>
-    );
-  }
-  if (state === "none" || !data) {
-    return (
-      <div className="py-16 text-center text-mut">
-        <p className="text-3xl mb-3 opacity-40">♪</p>
-        <p className="text-sm">Lirik tidak tersedia untuk lagu ini</p>
-      </div>
-    );
-  }
-
-  // progres baris aktif (0-100%)
-  const lineProgress = (() => {
-    if (activeIdx < 0) return 0;
-    const line = data.lines[activeIdx];
-    const next = data.lines[activeIdx + 1];
-    const span = (next ? next.startMs : line.endMs) - line.startMs;
-    if (span <= 0) return 0;
-    return Math.min(100, Math.max(0, ((currentTime * 1000 - line.startMs) / span) * 100));
-  })();
 
   return (
-    <div className="relative">
-      <div className="h-[44vh] overflow-y-auto pr-2 py-2">
-        {data.lines.map((l, i) => {
-          const active = i === activeIdx;
-          const past = i < activeIdx;
-          return (
-            <p
-              key={i}
-              ref={(el) => {
-                lineRefs.current[i] = el;
-              }}
-              className={`transition-all duration-300 py-1.5 leading-snug ${
-                active
-                  ? "text-white text-lg font-bold"
-                  : past
-                  ? "text-[#5c5c5c] text-base"
-                  : "text-[#8a8a8a] text-base"
-              }`}
-            >
-              {l.text}
-              {active && (
-                <span className="block mt-1 h-[2px] w-full bg-white/10 overflow-hidden rounded-full">
-                  <span
-                    className="block h-full bg-white transition-[width] duration-100"
-                    style={{ width: `${lineProgress}%` }}
-                  />
-                </span>
-              )}
-            </p>
-          );
-        })}
-      </div>
-      {data.source && (
-        <p className="absolute -top-1 right-0 text-[10px] text-mut/70">{data.source}</p>
-      )}
+    <div className="h-[46vh] overflow-y-auto no-scrollbar px-1 py-8">
+      {data.lines.map((l, i) => {
+        const active = i === activeIdx;
+        const past = i < activeIdx;
+        return (
+          <p
+            key={i}
+            ref={(el) => {
+              lineRefs.current[i] = el;
+            }}
+            className={`text-center leading-snug py-2.5 transition-colors duration-700 ease-out ${
+              active
+                ? "text-white text-[22px] sm:text-[26px] font-semibold"
+                : past
+                ? "text-white/35 text-[16px] sm:text-[17px]"
+                : "text-white/25 text-[16px] sm:text-[17px]"
+            }`}
+          >
+            {l.text}
+          </p>
+        );
+      })}
     </div>
   );
 }
