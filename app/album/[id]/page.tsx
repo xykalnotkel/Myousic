@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAlbum } from "@/lib/scraper/musiclists";
 import TrackList from "@/components/TrackList";
+import PlayButton from "@/components/PlayButton";
 import { Cover } from "@/components/ui";
 import { bestThumb } from "@/lib/types";
 
@@ -61,6 +62,9 @@ export default async function AlbumPage({ params }: { params: Promise<{ id: stri
               )}
               {album.year ? ` · ${album.year}` : ""} · {album.tracks?.length ?? 0} lagu
             </p>
+            <div className="mt-5">
+              <PlayButton tracks={album.tracks ?? []} label="Putar album" />
+            </div>
           </div>
         </div>
       </div>

@@ -8,6 +8,12 @@ import TrackList from "@/components/TrackList";
 import { Cover, Icon, I } from "@/components/ui";
 import { bestThumb, fmtCount } from "@/lib/types";
 import type { SearchTypeKey, SearchResultItem } from "@/lib/types";
+import {
+  loadSearchHistory,
+  pushSearchHistory,
+  removeSearchHistory,
+  clearSearchHistory,
+} from "@/lib/searchHistory";
 
 const TABS: { key: SearchTypeKey; label: string }[] = [
   { key: "songs", label: "Lagu" },
@@ -32,6 +38,11 @@ function SearchPageInner() {
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const reqIdRef = useRef(0);
+  const [hist, setHist] = useState<string[]>([]);
+
+  useEffect(() => {
+    setHist(loadSearchHistory());
+  }, []);
 
   // debounce input
   useEffect(() => {
@@ -68,7 +79,13 @@ function SearchPageInner() {
       .then((d) => {
         if (reqIdRef.current !== id) return; // respons basi
         if (d.error) setError(d.error);
-        else setResults(d.results ?? []);
+        else {
+          setResults(d.results ?? []);
+          if ((d.results ?? []).length) {
+            pushSearchHistory(query);
+            setHist(loadSearchHistory());
+          }
+        }
       })
       .catch((e) => {
         if (e?.name === "AbortError") return;

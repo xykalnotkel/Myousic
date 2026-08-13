@@ -442,13 +442,40 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const playContext = useCallback(
     (tracks: Track[], startIndex = 0) => {
-      const valid = tracks.filter((t) => t?.id);
-      if (!valid.length) return;
-      setQueue(valid);
-      orderRef.current = shuffledIndexes(valid.length);
-      posRef.current = startIndex < valid.length ? startIndex : 0;
-      setIndex(startIndex < valid.length ? startIndex : 0);
-      loadTrack(valid[startIndex < valid.length ? startIndex : 0]);
+      void (async () => {
+        const resolved: Track[] = [];
+        for (const t of tracks) {
+          if (t?.id && /^[A-Za-z0-9_-]{11}$/.test(t.id)) {
+            resolved.push(t);
+            continue;
+          }
+          const qq = [t?.title, t?.artist].filter(Boolean).join(" ");
+          if (!qq) continue;
+          try {
+            const r = await fetch(`/api/search?q=${encodeURIComponent(qq)}&type=songs`, { cache: "no-store" });
+            const d = await r.json();
+            const first = (d.results || []).find((x: { id?: string }) => x.id);
+            if (first?.id) {
+              resolved.push({
+                ...t,
+                id: first.id,
+                thumbnails: t.thumbnails?.length ? t.thumbnails : first.thumbnails,
+                artist: t.artist || first.artist,
+              });
+            }
+          } catch {}
+        }
+        if (!resolved.length) {
+          setError("Tidak ada lagu yang bisa diputar dari daftar ini. Coba cari judulnya.");
+          return;
+        }
+        const si = Math.min(startIndex, resolved.length - 1);
+        setQueue(resolved);
+        orderRef.current = shuffledIndexes(resolved.length);
+        posRef.current = si;
+        setIndex(si);
+        loadTrack(resolved[si]);
+      })();
     },
     [loadTrack]
   );

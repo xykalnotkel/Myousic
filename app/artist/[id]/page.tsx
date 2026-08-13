@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getArtist } from "@/lib/scraper/musiclists";
 import TrackList from "@/components/TrackList";
+import PlayButton from "@/components/PlayButton";
 import { Cover } from "@/components/ui";
 import { bestThumb } from "@/lib/types";
 import type { Track } from "@/lib/types";
@@ -70,6 +71,11 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
               {artist.topTracks?.length ? ` · ${artist.topTracks.length} lagu terpopuler` : ""}
             </p>
           )}
+          {artist.topTracks?.length ? (
+            <div className="mt-5">
+              <PlayButton tracks={artist.topTracks} label="Putar lagu populer" />
+            </div>
+          ) : null}
           </div>
         </div>
       </div>

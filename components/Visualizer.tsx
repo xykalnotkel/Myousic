@@ -37,9 +37,10 @@ export default function Visualizer({ variant = "bar", className, demo = false }:
 
     let raf = 0;
     let beatBoost = 0;
-    let prevBass = 0;
     let lastBeatAt = 0;
     let lastDraw = 0;
+    let avgFlux = 0.12;
+    const prevBand = new Float32Array(28);
 
     const freq = new Uint8Array(512);
     const wave = new Uint8Array(512);
@@ -78,18 +79,22 @@ export default function Visualizer({ variant = "bar", className, demo = false }:
         an.getByteTimeDomainData(wave);
       }
 
-      let bass = 0;
-      for (let i = 1; i < 12; i++) bass += freq[i];
-      bass /= 11 * 255;
-      const env = Math.max(bass, prevBass * 0.84);
-      if (!demo && playing && bass > (live ? 0.4 : 0.52) && bass > env * 1.02 && now - lastBeatAt > 200) {
+      let flux = 0;
+      for (let i = 1; i < 28; i++) {
+        const v = freq[i] / 255;
+        const d = v - prevBand[i];
+        if (d > 0) flux += d;
+        prevBand[i] = prevBand[i] * 0.55 + v * 0.45;
+      }
+      avgFlux = avgFlux * 0.9 + flux * 0.1;
+      const thresh = live ? Math.max(0.14, avgFlux * 1.38) : 0.55;
+      if (!demo && playing && flux > thresh && now - lastBeatAt > 170) {
         lastBeatAt = now;
         beatBoost = 1;
         (window as any).__kainetBeat?.beatNow();
       }
-      prevBass = env;
-      beatBoost = Math.max(0, beatBoost - 0.045);
-      const boost = 1 + beatBoost * 0.7;
+      beatBoost = Math.max(0, beatBoost - 0.055);
+      const boost = 1 + beatBoost * 0.95;
 
       if (variant === "ring") {
         const cx = w / 2;

@@ -31,7 +31,10 @@ export default function LyricsPanel() {
     }
     setState("load");
     setData(null);
-    fetch(`/api/lyrics/${encodeURIComponent(id)}`)
+    const qs = new URLSearchParams();
+    if (current?.title) qs.set("title", current.title);
+    if (current?.artist) qs.set("artist", current.artist);
+    fetch(`/api/lyrics/${encodeURIComponent(id)}?${qs.toString()}`)
       .then((r) => r.json())
       .then((d) => {
         if (cancel) return;
@@ -48,7 +51,7 @@ export default function LyricsPanel() {
     return () => {
       cancel = true;
     };
-  }, [current?.id]);
+  }, [current?.id, current?.title, current?.artist]);
 
   const activeIdx = useMemo(() => {
     if (!data) return -1;
