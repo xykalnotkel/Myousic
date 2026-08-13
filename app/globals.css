@@ -135,7 +135,11 @@ input[type="range"].knob::-moz-range-thumb {
 }
 
 /* ---------- misc ---------- */
+img {
+  max-width: 100%;
+}
 .card-lift {
+  overflow: hidden;
   transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), background 0.22s, border-color 0.22s;
 }
 .card-lift:hover {

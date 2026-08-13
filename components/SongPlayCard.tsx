@@ -13,15 +13,9 @@ export default function SongPlayCard({ tracks, index }: { tracks: Track[]; index
   return (
     <button
       onClick={() => playContext(tracks, index)}
-      className="card-lift shrink-0 w-36 sm:w-40 rounded-xl bg-panel ring-1 ring-line p-2.5 text-left"
+      className="card-lift shrink-0 w-36 sm:w-40 rounded-xl bg-panel ring-1 ring-line p-2.5 text-left overflow-hidden"
     >
-      <Cover
-        src={pickThumb(t.thumbnails, 240)}
-        title={t.title}
-        size={160}
-        className="w-full aspect-square"
-        rounded="rounded-lg"
-      />
+      <Cover src={pickThumb(t.thumbnails, 240)} title={t.title} className="w-full" rounded="rounded-lg" />
       <p className={`mt-2.5 text-sm font-semibold truncate ${on ? "text-white" : ""}`}>{t.title}</p>
       <p className="text-[11px] text-mut truncate">{on && playing ? "Sedang diputar" : t.artist || "Lagu"}</p>
     </button>

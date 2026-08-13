@@ -104,21 +104,24 @@ export function Cover({
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const shape = circle ? "rounded-full" : rounded;
-  const px = sizeClass ? 240 : size <= 56 ? 120 : size <= 120 ? 240 : 480;
+  const fill = Boolean(sizeClass) || /\bw-full\b|\baspect-/.test(className);
+  const px = fill ? 240 : size <= 56 ? 120 : size <= 120 ? 240 : 480;
   const url = !failed ? sizedThumb(src, px) : undefined;
   const fb = fallbackArt(title);
 
   return (
     <div
-      className={`${shape} bg-elev shrink-0 overflow-hidden relative flex items-center justify-center ${sizeClass ?? ""} ${className}`}
-      style={sizeClass ? undefined : { width: size, height: size }}
+      className={`relative overflow-hidden bg-elev shrink-0 ${shape} ${sizeClass ?? ""} ${className}`}
+      style={
+        fill
+          ? { aspectRatio: "1 / 1", maxWidth: "100%" }
+          : { width: size, height: size, aspectRatio: "1 / 1", flexShrink: 0 }
+      }
     >
       {!loaded && <div className="absolute inset-0 skeleton" />}
       <img
         src={url || fb}
         alt={title}
-        width={size}
-        height={size}
         decoding="async"
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : "low"}
@@ -129,7 +132,16 @@ export function Cover({
         onError={() => {
           if (!failed) setFailed(true);
         }}
-        className={`w-full h-full object-cover ${!url ? "opacity-70" : ""}`}
+        className={!url ? "opacity-70" : ""}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          objectPosition: "center",
+          display: "block",
+        }}
       />
     </div>
   );

@@ -253,13 +253,12 @@ export default async function Home() {
               <Link
                 key={`${s.browseId}-${i}`}
                 href={`/playlist/${s.browseId}`}
-                className="card-lift shrink-0 w-44 rounded-xl bg-panel ring-1 ring-line p-3"
+                className="card-lift shrink-0 w-44 rounded-xl bg-panel ring-1 ring-line p-3 overflow-hidden"
               >
                 <Cover
                   src={pickThumb(s.thumbnails, 240)}
                   title={s.title}
-                  size={176}
-                  className="w-full aspect-square"
+                  className="w-full"
                   rounded="rounded-lg"
                 />
                 <p className="mt-3 text-sm font-semibold truncate">{s.title}</p>
