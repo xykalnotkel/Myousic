@@ -40,7 +40,7 @@ function CoverArt({
 }) {
   const style = COVER_STYLES[styleIdx] ?? COVER_STYLES[0];
   return (
-    <div className="relative w-56 h-56 sm:w-80 sm:h-80 rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-[0_0_90px_rgba(255,255,255,0.08)] bg-elev">
+    <div className="relative w-[min(68vw,240px)] h-[min(68vw,240px)] sm:w-72 sm:h-72 rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-[0_0_90px_rgba(255,255,255,0.08)] bg-elev">
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -108,7 +108,6 @@ export default function FullPlayer({
     playAt,
   } = usePlayer();
   const [tab, setTab] = useState<"viz" | "lyr" | "queue" | "fx">("viz");
-  const touchY = useRef<number | null>(null);
   const [styleIdx, setStyleIdx] = useState(0);
   const artWrapRef = useRef<HTMLDivElement>(null);
 
@@ -134,9 +133,14 @@ export default function FullPlayer({
       if (e.code === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     return () => {
       window.removeEventListener("kainet:beat", onBeat);
       window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+      document.documentElement.style.overflow = "";
     };
   }, [onClose]);
 
@@ -154,16 +158,8 @@ export default function FullPlayer({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#040404] overflow-y-auto"
-      onTouchStart={(e) => {
-        touchY.current = e.touches[0]?.clientY ?? null;
-      }}
-      onTouchEnd={(e) => {
-        const start = touchY.current;
-        touchY.current = null;
-        const y = e.changedTouches[0]?.clientY;
-        if (start != null && y != null && y - start > 90) onClose();
-      }}
+      className="fixed inset-0 z-50 bg-[#040404] overflow-y-auto overflow-x-hidden overscroll-none"
+      style={{ touchAction: "pan-y", width: "100vw", maxWidth: "100%" }}
     >
       <div className="min-h-full relative">
         {/* blur backdrop dari cover art (mengikuti gaya) */}
@@ -295,10 +291,10 @@ export default function FullPlayer({
             {/* kanan: tabs */}
             <div className="w-full">
               {/* tab bar */}
-              <div className="flex gap-1.5 mb-4 bg-white/[0.04] rounded-full p-1 w-fit">
+              <div className="flex gap-1 mb-4 bg-white/[0.04] rounded-full p-1 w-full max-w-full overflow-x-auto no-scrollbar">
                 {(
                   [
-                    { id: "viz", label: "Visualizer" },
+                    { id: "viz", label: "Gelombang" },
                     { id: "lyr", label: "Lirik" },
                     { id: "fx", label: "Suara" },
                     { id: "queue", label: "Antrian" },
@@ -307,7 +303,7 @@ export default function FullPlayer({
                   <button
                     key={t.id}
                     onClick={() => setTab(t.id)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-colors ${
                       tab === t.id ? "bg-white text-black" : "text-mut hover:text-white"
                     }`}
                   >

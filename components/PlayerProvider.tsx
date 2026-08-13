@@ -392,19 +392,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      // MV resmi dicari dari awal (lagu halaman artis = Topic, embed sering ditolak)
-      const altsP = findAltIds(tr.title, tr.artist, tr.id);
-      const earlyAlts = await Promise.race([
-        altsP,
-        new Promise<string[]>((r) => setTimeout(() => r([]), 1400)),
-      ]);
-      const tryOrder = [...new Set([...(earlyAlts[0] ? [earlyAlts[0]] : []), tr.id, ...(await altsP)])];
-      let ok = false;
-      for (const id of tryOrder) {
-        if (gen !== genRef.current) return;
-        if (id !== tr.id) setError("Mencari versi yang bisa diputar…");
-        ok = await playId(id);
-        if (ok) break;
+      // Putar ID asli dulu. Alternatif cuma kalau embed+stream gagal — biar lagunya tidak ketuker.
+      let ok = await playId(tr.id);
+      if (!ok && gen === genRef.current) {
+        setError("Mencari versi yang sama…");
+        const alts = await findAltIds(tr.title, tr.artist, tr.id);
+        for (const id of alts) {
+          if (gen !== genRef.current) return;
+          ok = await playId(id);
+          if (ok) break;
+        }
       }
 
       if (gen !== genRef.current) return;
@@ -622,6 +619,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const current = index >= 0 ? queue[index] ?? null : null;
+
+  useEffect(() => {
+    try {
+      const n = (window as any).MyousicNative;
+      if (n?.nowPlaying) n.nowPlaying(current?.title || "", current?.artist || "");
+    } catch {}
+  }, [current]);
 
   // Media Session — kontrol dari lockscreen / notifikasi (background play)
   useEffect(() => {

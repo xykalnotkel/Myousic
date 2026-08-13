@@ -16,6 +16,8 @@ body {
   color: #fff;
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   height: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 
 /* ---------- scrollbar ---------- */
