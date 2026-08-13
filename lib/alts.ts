@@ -1,20 +1,36 @@
-// Cari video alternatif kalau id asli tidak bisa diputar.
+// Cari id alternatif: MV resmi, lirik, live — kalau Topic/embed dimatikan.
 
 export async function findAltIds(title?: string, artist?: string, exclude?: string): Promise<string[]> {
-  const q = [title, artist].filter(Boolean).join(" ").trim();
-  if (!q) return [];
-  try {
-    const r = await fetch(`/api/search?q=${encodeURIComponent(q)}&type=videos`, { cache: "no-store" });
-    const d = await r.json();
-    const ids: string[] = [];
-    for (const x of d.results ?? []) {
-      const id = (x as { id?: string }).id;
+  const base = [title, artist].filter(Boolean).join(" ").trim();
+  if (!base) return [];
+
+  const jobs = [
+    { q: `${base} official video`, type: "videos" },
+    { q: `${base} lirik`, type: "videos" },
+    { q: base, type: "videos" },
+    { q: base, type: "songs" },
+  ];
+
+  const lists = await Promise.all(
+    jobs.map(async ({ q, type }) => {
+      try {
+        const r = await fetch(`/api/search?q=${encodeURIComponent(q)}&type=${type}`, { cache: "no-store" });
+        const d = await r.json();
+        return (d.results ?? []) as { id?: string }[];
+      } catch {
+        return [] as { id?: string }[];
+      }
+    })
+  );
+
+  const ids: string[] = [];
+  for (const results of lists) {
+    for (const x of results) {
+      const id = x.id;
       if (typeof id === "string" && id.length === 11 && id !== exclude && !ids.includes(id)) {
         ids.push(id);
       }
     }
-    return ids.slice(0, 6);
-  } catch {
-    return [];
   }
+  return ids.slice(0, 8);
 }

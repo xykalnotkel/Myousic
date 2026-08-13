@@ -81,7 +81,7 @@ export function createYtHandle(h: Handlers): YtHandle {
       : new Promise<void>((res) => readyWait.push(res));
 
   const fail = (msg: string) => {
-    h.onError(msg);
+    // Jangan tampilkan error di UI dari sini — biar loadTrack yang fallback.
     pending?.reject(new Error(msg));
     pending = null;
   };
@@ -161,10 +161,10 @@ export function createYtHandle(h: Handlers): YtHandle {
         } catch {}
         window.setTimeout(() => {
           if (pending) {
-            pending.resolve();
+            pending.reject(new Error("timeout memuat YouTube"));
             pending = null;
           }
-        }, 8000);
+        }, 5500);
       });
     },
     play() {

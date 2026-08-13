@@ -316,95 +316,110 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setLoading(true);
 
       const q = [tr.title, tr.artist].filter(Boolean).join(" ");
-      const streamPath = `/api/stream/${encodeURIComponent(tr.id)}${q ? `?q=${encodeURIComponent(q)}` : ""}`;
       wantPlayRef.current = true;
 
-      // 1) IFrame dulu — cepat, dari IP user. Kalau id mati, cari video lain.
       const tryYt = async (id: string) => {
+        setEngine("yt");
+        engineRef.current = "yt";
         const yt = ensureYt();
         yt.setVolume(volumeRef.current);
         yt.setMuted(mutedRef.current);
         await yt.load(id);
-      };
-
-      try {
-        setEngine("yt");
-        engineRef.current = "yt";
-        try {
-          audio.pause();
-          audio.removeAttribute("src");
-          audio.load();
-        } catch {}
-        await tryYt(tr.id);
-        if (gen !== genRef.current) return;
         setLoading(false);
         setError(null);
-      } catch {
-        if (gen !== genRef.current) return;
-        const alts = await findAltIds(tr.title, tr.artist, tr.id);
-        let ok = false;
-        for (const id of alts) {
-          if (gen !== genRef.current) return;
-          try {
-            await tryYt(id);
-            ok = true;
-            break;
-          } catch {
-            /* coba id berikutnya */
-          }
-        }
-        if (!ok) setError("Video tidak tersedia. Mencoba stream / lewati lagu.");
-        else {
-          setLoading(false);
-          setError(null);
-        }
-      }
+      };
 
-      // 2) di belakang: coba stream supaya visualizer + FX nyata
-      (async () => {
+      const tryStream = (id: string) =>
+        new Promise<boolean>((resolve) => {
+          const src = `/api/stream/${encodeURIComponent(id)}${q ? `?q=${encodeURIComponent(q)}` : ""}`;
+          const ok = () => {
+            cleanup();
+            resolve(true);
+          };
+          const bad = () => {
+            cleanup();
+            resolve(false);
+          };
+          const cleanup = () => {
+            audio.removeEventListener("canplay", ok);
+            audio.removeEventListener("playing", ok);
+            audio.removeEventListener("error", bad);
+          };
+          try {
+            audio.crossOrigin = "anonymous";
+            audio.src = src;
+            audio.volume = volumeRef.current;
+            audio.muted = mutedRef.current;
+            audio.addEventListener("canplay", ok);
+            audio.addEventListener("playing", ok);
+            audio.addEventListener("error", bad);
+            audio.load();
+            audio.play().catch(() => {});
+          } catch {
+            resolve(false);
+            return;
+          }
+          window.setTimeout(bad, 7000);
+        });
+
+      const playId = async (id: string) => {
         try {
-          const probe = audio;
-          probe.crossOrigin = "anonymous";
-          probe.src = streamPath;
-          await new Promise<void>((resolve, reject) => {
-            const ok = () => {
-              cleanup();
-              resolve();
-            };
-            const bad = () => {
-              cleanup();
-              reject(new Error("no"));
-            };
-            const cleanup = () => {
-              probe.removeEventListener("canplay", ok);
-              probe.removeEventListener("error", bad);
-            };
-            probe.addEventListener("canplay", ok);
-            probe.addEventListener("error", bad);
-            probe.load();
-            setTimeout(bad, 9000);
-          });
-          if (gen !== genRef.current) return;
-          const t = ytRef.current?.getCurrentTime() || 0;
+          await tryYt(id);
+          return true;
+        } catch {
+          // embed dimatikan (101/150) — stream ID yang sama sering masih bisa
+          const streamed = await tryStream(id);
+          if (!streamed || gen !== genRef.current) return false;
           engineRef.current = "audio";
           setEngine("audio");
           try {
             ytRef.current?.pause();
           } catch {}
-          if (isFinite(t) && t > 0.4) {
-            try {
-              probe.currentTime = t;
-            } catch {}
-          }
-          probe.volume = volumeRef.current;
-          probe.muted = mutedRef.current;
-          await probe.play();
-          if (gen !== genRef.current) return;
+          await audio.play().catch(() => {});
+          setLoading(false);
           setError(null);
-        } catch {
-          /* tetap di iframe */
+          setPlaying(true);
+          return true;
         }
-      })();
+      };
+
+      let ok = await playId(tr.id);
+      if (!ok && gen === genRef.current) {
+        setError("Embed ditolak — mencari versi lain…");
+        const alts = await findAltIds(tr.title, tr.artist, tr.id);
+        for (const id of alts) {
+          if (gen !== genRef.current) return;
+          ok = await playId(id);
+          if (ok) break;
+        }
+      }
+
+      if (gen !== genRef.current) return;
+      if (ok) {
+        setError(null);
+        setLoading(false);
+        // upgrade ke stream (FX + visualizer nyata) kalau iframe yang menang
+        if (engineRef.current === "yt") {
+          tryStream(tr.id).then(async (streamed) => {
+            if (!streamed || gen !== genRef.current) return;
+            const t = ytRef.current?.getCurrentTime() || 0;
+            engineRef.current = "audio";
+            setEngine("audio");
+            try {
+              ytRef.current?.pause();
+            } catch {}
+            if (t > 0.4) {
+              try {
+                audio.currentTime = t;
+              } catch {}
+            }
+            await audio.play().catch(() => {});
+          });
+        }
+      } else {
+        setLoading(false);
+        setError("Lagu ini tidak bisa diputar (embed & stream ditolak). Coba Lewati atau cari judul resmi/lirik.");
+      }
     },
     [ensureCtx, ensureYt]
   );
