@@ -155,8 +155,25 @@ img {
   scrollbar-width: none;
 }
 
-.text-glow {
-  text-shadow: 0 0 24px rgba(255, 255, 255, 0.35);
+/* ---------- karaoke mask per kata ---------- */
+.k-word {
+  position: relative;
+  display: inline-block;
+  color: rgba(255, 255, 255, 0.22);
+  margin: 0 0.22em 0.12em 0;
+  white-space: nowrap;
+}
+.k-word > i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  color: #fff;
+  font-style: normal;
+  font-weight: inherit;
+  white-space: nowrap;
+  width: var(--k, 0%);
+  pointer-events: none;
 }
 
 /* ikon SVG selalu terisi warna teks */

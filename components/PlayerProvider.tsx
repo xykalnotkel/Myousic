@@ -286,6 +286,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       ctxRef.current = ac;
       analyserRef.current = an;
       setAnalyser(an);
+      (window as any).__kainetAnalyser = an;
       applyFx(fxRef.current);
     }
     if (ctxRef.current && ctxRef.current.state === "suspended") ctxRef.current.resume();
@@ -728,6 +729,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   };
 
   apiRef.current = value;
+  if (typeof window !== "undefined") {
+    (window as any).__myousic = {
+      toggle: () => apiRef.current?.toggle(),
+      next: () => apiRef.current?.next(),
+      prev: () => apiRef.current?.prev(),
+      getTime: () => {
+        if (engineRef.current === "yt" && ytRef.current) return ytRef.current.getCurrentTime() || 0;
+        const a = audioRef.current;
+        return a && isFinite(a.currentTime) ? a.currentTime : 0;
+      },
+    };
+  }
 
   useEffect(() => {
     const onBeat = () => setBeatVersion((b) => b + 1);

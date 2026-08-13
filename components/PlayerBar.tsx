@@ -103,7 +103,7 @@ export default function PlayerBar() {
 
   return (
     <>
-      {/* bar melayang — di atas bottom nav di mobile, di atas tepi bawah di desktop */}
+      {!fullOpen && (
       <div className="fixed bottom-[78px] md:bottom-4 left-0 right-0 z-40 pointer-events-none px-2.5 sm:px-4">
         <div className="pointer-events-auto mx-auto max-w-[1500px] rounded-2xl overflow-hidden ring-1 ring-white/10 bg-black/90 backdrop-blur-md shadow-[0_16px_60px_rgba(0,0,0,0.7)]">
           {error && (
@@ -278,6 +278,7 @@ export default function PlayerBar() {
           {soundOpen && <SoundSheet onClose={() => setSoundOpen(false)} />}
           </div>
       </div>
+      )}
 
       {fullOpen && <FullPlayer queue={queue} index={index} onClose={closeFull} />}
     </>
