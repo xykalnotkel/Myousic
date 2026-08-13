@@ -290,11 +290,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       onEnded: () => {
         if (engineRef.current === "yt") CtxHolder.get()?.next(true);
       },
-      onError: (msg) => {
-        if (engineRef.current === "yt") {
-          setLoading(false);
-          setError(`${msg}. Gunakan tombol Lewati.`);
-        }
+      onError: (_msg) => {
+        /* jangan tampilkan — loadTrack yang fallback */
       },
     });
     ytRef.current = handle;
@@ -362,23 +359,30 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           window.setTimeout(bad, 7000);
         });
 
+      const adoptStream = async () => {
+        engineRef.current = "audio";
+        setEngine("audio");
+        try {
+          ytRef.current?.pause();
+        } catch {}
+        await audio.play().catch(() => {});
+        setLoading(false);
+        setError(null);
+        setPlaying(true);
+      };
+
       const playId = async (id: string) => {
+        const streamP = tryStream(id);
         try {
           await tryYt(id);
+          streamP.then((ok) => {
+            if (ok && gen === genRef.current) void adoptStream();
+          });
           return true;
         } catch {
-          // embed dimatikan (101/150) — stream ID yang sama sering masih bisa
-          const streamed = await tryStream(id);
+          const streamed = await streamP;
           if (!streamed || gen !== genRef.current) return false;
-          engineRef.current = "audio";
-          setEngine("audio");
-          try {
-            ytRef.current?.pause();
-          } catch {}
-          await audio.play().catch(() => {});
-          setLoading(false);
-          setError(null);
-          setPlaying(true);
+          await adoptStream();
           return true;
         }
       };

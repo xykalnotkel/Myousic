@@ -90,66 +90,60 @@ export function createYtHandle(h: Handlers): YtHandle {
     async load(videoId: string) {
       await loadApi();
       if (!player) {
-        host = document.createElement("div");
-        host.id = "myousic-yt-host";
-        host.setAttribute("aria-hidden", "true");
-        // Harus tetap di viewport — YouTube pause kalau player di luar layar.
-        host.style.cssText =
-          "position:fixed;right:10px;bottom:10px;width:42px;height:42px;opacity:0.02;overflow:hidden;pointer-events:none;z-index:1;border-radius:8px";
-        document.body.appendChild(host);
-        const mount = document.createElement("div");
-        host.appendChild(mount);
-        player = new window.YT.Player(mount, {
-          width: 42,
-          height: 42,
-          videoId,
-          host: "https://www.youtube.com",
-          playerVars: {
-            autoplay: 1,
-            controls: 0,
-            disablekb: 1,
-            fs: 0,
-            modestbranding: 1,
-            playsinline: 1,
-            rel: 0,
-            origin: window.location.origin,
-          },
-          events: {
-            onReady: () => {
-              ready = true;
-              readyWait.splice(0).forEach((fn) => fn());
-              try {
-                player.playVideo();
-              } catch {}
-            },
-            onStateChange: (e: any) => {
-              const YT = window.YT;
-              if (!YT) return;
-              if (e.data === YT.PlayerState.PLAYING) {
-                pending?.resolve();
-                pending = null;
-                h.onPlay();
-              } else if (e.data === YT.PlayerState.PAUSED) h.onPause();
-              else if (e.data === YT.PlayerState.ENDED) h.onEnded();
-            },
-            onError: (e: any) => {
-              fail(ERR[e?.data] || `YouTube error ${e?.data ?? ""}`);
-            },
-          },
-        });
-        await whenReady();
         return new Promise<void>((resolve, reject) => {
           pending = { resolve, reject };
-          try {
-            player.playVideo();
-          } catch {}
+          host = document.createElement("div");
+          host.id = "myousic-yt-host";
+          host.setAttribute("aria-hidden", "true");
+          host.style.cssText =
+            "position:fixed;right:10px;bottom:10px;width:42px;height:42px;opacity:0.02;overflow:hidden;pointer-events:none;z-index:1;border-radius:8px";
+          document.body.appendChild(host);
+          const mount = document.createElement("div");
+          host.appendChild(mount);
+          player = new window.YT.Player(mount, {
+            width: 42,
+            height: 42,
+            videoId,
+            host: "https://www.youtube.com",
+            playerVars: {
+              autoplay: 1,
+              controls: 0,
+              disablekb: 1,
+              fs: 0,
+              modestbranding: 1,
+              playsinline: 1,
+              rel: 0,
+              origin: typeof window !== "undefined" ? window.location.origin : undefined,
+            },
+            events: {
+              onReady: () => {
+                ready = true;
+                readyWait.splice(0).forEach((fn) => fn());
+                try {
+                  player.playVideo();
+                } catch {}
+              },
+              onStateChange: (e: any) => {
+                const YT = window.YT;
+                if (!YT) return;
+                if (e.data === YT.PlayerState.PLAYING) {
+                  pending?.resolve();
+                  pending = null;
+                  h.onPlay();
+                } else if (e.data === YT.PlayerState.PAUSED) h.onPause();
+                else if (e.data === YT.PlayerState.ENDED) h.onEnded();
+              },
+              onError: (e: any) => {
+                fail(ERR[e?.data] || `YouTube error ${e?.data ?? ""}`);
+              },
+            },
+          });
           window.setTimeout(() => {
             if (pending) {
-              // sudah play atau masih buffering — anggap sukses biar UI tidak menggantung
-              pending.resolve();
+              pending.reject(new Error("timeout memuat YouTube"));
               pending = null;
             }
-          }, 8000);
+          }, 6000);
         });
       }
       await whenReady();
