@@ -227,9 +227,21 @@ export async function getStreamSource(
     return hit;
   }
 
+  const reasons: string[] = [];
+
+  // ytdl dulu — youtubei.js IOS masih kasih URL audio dari IP datacenter
+  try {
+    const { getYtdlSource } = await import("./ytdl");
+    const src = await getYtdlSource(id);
+    const entry: CacheEntry = { ...src, expires: Date.now() + 1000 * 60 * 90 };
+    cache.set(id, entry);
+    return entry;
+  } catch (e: any) {
+    reasons.push(e?.message || "ytdl error");
+  }
+
   const list = opts?.quick ? CLIENTS.filter((c) => c.name === "IOS" || c.name === "ANDROID") : CLIENTS;
 
-  const reasons: string[] = [];
   for (const client of list) {
     try {
       const out = await tryClient(id, client);
