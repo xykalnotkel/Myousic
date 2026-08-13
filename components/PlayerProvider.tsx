@@ -356,7 +356,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
             resolve(false);
             return;
           }
-          window.setTimeout(bad, 7000);
+          window.setTimeout(bad, 3500);
         });
 
       const adoptStream = async () => {
@@ -380,22 +380,31 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           });
           return true;
         } catch {
-          const streamed = await streamP;
-          if (!streamed || gen !== genRef.current) return false;
-          await adoptStream();
-          return true;
+          const streamed = await Promise.race([
+            streamP,
+            new Promise<boolean>((r) => setTimeout(() => r(false), 2800)),
+          ]);
+          if (streamed && gen === genRef.current) {
+            await adoptStream();
+            return true;
+          }
+          return false;
         }
       };
 
-      let ok = await playId(tr.id);
-      if (!ok && gen === genRef.current) {
-        setError("Embed ditolak — mencari versi lain…");
-        const alts = await findAltIds(tr.title, tr.artist, tr.id);
-        for (const id of alts) {
-          if (gen !== genRef.current) return;
-          ok = await playId(id);
-          if (ok) break;
-        }
+      // MV resmi dicari dari awal (lagu halaman artis = Topic, embed sering ditolak)
+      const altsP = findAltIds(tr.title, tr.artist, tr.id);
+      const earlyAlts = await Promise.race([
+        altsP,
+        new Promise<string[]>((r) => setTimeout(() => r([]), 1400)),
+      ]);
+      const tryOrder = [...new Set([...(earlyAlts[0] ? [earlyAlts[0]] : []), tr.id, ...(await altsP)])];
+      let ok = false;
+      for (const id of tryOrder) {
+        if (gen !== genRef.current) return;
+        if (id !== tr.id) setError("Mencari versi yang bisa diputar…");
+        ok = await playId(id);
+        if (ok) break;
       }
 
       if (gen !== genRef.current) return;

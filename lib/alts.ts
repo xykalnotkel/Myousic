@@ -1,14 +1,13 @@
-// Cari id alternatif: MV resmi, lirik, live — kalau Topic/embed dimatikan.
+// Cari id alternatif: MV resmi / lirik — lagu Topic artis sering tidak bisa di-embed.
 
 export async function findAltIds(title?: string, artist?: string, exclude?: string): Promise<string[]> {
   const base = [title, artist].filter(Boolean).join(" ").trim();
   if (!base) return [];
 
   const jobs = [
-    { q: `${base} official video`, type: "videos" },
+    { q: `${base} official`, type: "videos" },
     { q: `${base} lirik`, type: "videos" },
     { q: base, type: "videos" },
-    { q: base, type: "songs" },
   ];
 
   const lists = await Promise.all(
@@ -32,5 +31,5 @@ export async function findAltIds(title?: string, artist?: string, exclude?: stri
       }
     }
   }
-  return ids.slice(0, 8);
+  return ids.slice(0, 6);
 }

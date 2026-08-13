@@ -143,7 +143,7 @@ export function createYtHandle(h: Handlers): YtHandle {
               pending.reject(new Error("timeout memuat YouTube"));
               pending = null;
             }
-          }, 6000);
+          }, 3200);
         });
       }
       await whenReady();
@@ -158,7 +158,7 @@ export function createYtHandle(h: Handlers): YtHandle {
             pending.reject(new Error("timeout memuat YouTube"));
             pending = null;
           }
-        }, 5500);
+        }, 3200);
       });
     },
     play() {
