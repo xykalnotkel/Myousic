@@ -57,7 +57,9 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-[#050505]/40 to-[#050505]" />
-        <div className="relative p-6 md:p-10">
+        <div className="relative p-6 md:p-10 flex flex-col sm:flex-row items-center sm:items-end gap-6">
+          <Cover src={art} title={artist.title} size={160} circle className="ring-4 ring-white/10 shadow-2xl" />
+          <div className="text-center sm:text-left">
           <p className="text-[11px] uppercase tracking-[0.35em] text-soft mb-3">Artis</p>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tighter text-glow">
             {artist.title}
@@ -68,6 +70,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
               {artist.topTracks?.length ? ` · ${artist.topTracks.length} lagu terpopuler` : ""}
             </p>
           )}
+          </div>
         </div>
       </div>
 

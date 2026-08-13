@@ -195,6 +195,14 @@ export default function PlayerBar() {
 
             {/* kanan: volume */}
             <div className="flex items-center justify-end gap-2 min-w-[140px]">
+                <button
+                onClick={openFull}
+                className="text-mut hover:text-white transition-colors"
+                title="Mesin suara / layar penuh"
+                disabled={!hasTrack}
+              >
+                <Icon d={I.fx} size={18} />
+              </button>
               <button onClick={toggleMute} className="text-mut hover:text-white transition-colors" title="Bisukan (M)">
                 <Icon d={muted || volume === 0 ? I.mute : I.volume} size={20} />
               </button>

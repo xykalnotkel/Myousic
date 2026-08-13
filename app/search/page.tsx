@@ -189,7 +189,9 @@ function SearchPageInner() {
                     <Cover
                       src={bestThumb(r.thumbnails)}
                       title={r.title}
-                      sizeClass="w-full aspect-square rounded-lg"
+                      circle={type === "artists"}
+                      sizeClass={type === "artists" ? "w-full aspect-square" : "w-full aspect-square"}
+                      rounded={type === "artists" ? "rounded-full" : "rounded-lg"}
                     />
                     <p className="mt-3 text-sm font-semibold truncate">{r.title}</p>
                     <p className="text-xs text-mut mt-0.5 truncate">{sub}</p>

@@ -10,6 +10,7 @@ const NAV = [
   { href: "/search", label: "Cari", icon: I.search },
   { href: "/trending", label: "Trending", icon: I.trending },
   { href: "/artists", label: "Artis", icon: I.user },
+  { href: "/playlists", label: "Playlist", icon: I.playlist },
 ];
 
 export default function Sidebar() {

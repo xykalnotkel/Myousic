@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePlayer } from "./PlayerProvider";
 import Visualizer from "./Visualizer";
 import LyricsPanel from "./Lyrics";
+import FxPanel from "./FxPanel";
 import { Cover, Icon, I, Equalizer } from "./ui";
 import { bestThumb, fmtDur } from "@/lib/types";
 import type { Track } from "@/lib/types";
@@ -93,6 +94,7 @@ export default function FullPlayer({
   const {
     current,
     playing,
+    engine,
     toggle,
     next,
     prev,
@@ -106,7 +108,8 @@ export default function FullPlayer({
     playAt,
   } = usePlayer();
   const [pulseKey, setPulseKey] = useState(0);
-  const [tab, setTab] = useState<"viz" | "lyr" | "queue">("viz");
+  const [tab, setTab] = useState<"viz" | "lyr" | "queue" | "fx">("viz");
+  const touchY = useRef<number | null>(null);
   const [styleIdx, setStyleIdx] = useState(0);
   const artWrapRef = useRef<HTMLDivElement>(null);
 
@@ -152,7 +155,18 @@ export default function FullPlayer({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#040404] overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 bg-[#040404] overflow-y-auto"
+      onTouchStart={(e) => {
+        touchY.current = e.touches[0]?.clientY ?? null;
+      }}
+      onTouchEnd={(e) => {
+        const start = touchY.current;
+        touchY.current = null;
+        const y = e.changedTouches[0]?.clientY;
+        if (start != null && y != null && y - start > 90) onClose();
+      }}
+    >
       <div className="min-h-full relative">
         {/* blur backdrop dari cover art (mengikuti gaya) */}
         {art && (
@@ -180,6 +194,9 @@ export default function FullPlayer({
             <div className="flex items-center gap-2 text-mut">
               <Equalizer size={14} active={playing} />
               <span className="text-xs uppercase tracking-[0.25em]">Now Playing</span>
+              <span className="text-[10px] tracking-normal normal-case opacity-70">
+                {engine === "audio" ? "· gelombang nyata" : "· YouTube"}
+              </span>
             </div>
             <button
               onClick={onClose}
@@ -280,6 +297,7 @@ export default function FullPlayer({
                   [
                     { id: "viz", label: "Visualizer" },
                     { id: "lyr", label: "Lirik" },
+                    { id: "fx", label: "Suara" },
                     { id: "queue", label: "Antrian" },
                   ] as const
                 ).map((t) => (
@@ -301,6 +319,12 @@ export default function FullPlayer({
                   <div className="absolute bottom-3 left-4 text-[10px] uppercase tracking-[0.3em] text-mut">
                     Ular morphing — menari mengikuti beat
                   </div>
+                </div>
+              )}
+
+              {tab === "fx" && (
+                <div className="mb-6">
+                  <FxPanel />
                 </div>
               )}
 

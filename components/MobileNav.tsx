@@ -28,9 +28,9 @@ export default function MobileNav() {
           Beranda
         </Link>
 
-        <Link href="/trending" className={item(pathname.startsWith("/trending"))}>
-          <Icon d={I.trending} size={23} />
-          Trending
+        <Link href="/playlists" className={item(pathname.startsWith("/playlists"))}>
+          <Icon d={I.playlist} size={23} />
+          Playlist
         </Link>
 
         <button

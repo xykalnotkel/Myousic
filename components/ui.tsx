@@ -1,9 +1,18 @@
 "use client";
 
-import { bestThumb } from "@/lib/types";
+import { useState } from "react";
+import { pickThumb, sizedThumb } from "@/lib/thumbs";
 
-// ---------- Ikon (inline SVG, monokrom) ----------
-export function Icon({ d, size = 22, className }: { d: string; size?: number; className?: string }) {
+// ---------- Ikon (Material-style 24×24, fill — pasti tampil) ----------
+export function Icon({
+  d,
+  size = 22,
+  className,
+}: {
+  d: string;
+  size?: number;
+  className?: string;
+}) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -12,6 +21,7 @@ export function Icon({ d, size = 22, className }: { d: string; size?: number; cl
       fill="currentColor"
       className={className}
       aria-hidden
+      style={{ display: "block", flexShrink: 0 }}
     >
       <path d={d} />
     </svg>
@@ -19,32 +29,42 @@ export function Icon({ d, size = 22, className }: { d: string; size?: number; cl
 }
 
 export const I = {
-  play: "M8 5.14v13.72c0 .9.98 1.44 1.74.96l10.4-6.86a1.14 1.14 0 0 0 0-1.92L9.74 4.18A1.14 1.14 0 0 0 8 5.14z",
-  pause:
-    "M7 5.5A1.5 1.5 0 0 1 8.5 4h1A1.5 1.5 0 0 1 11 5.5v13A1.5 1.5 0 0 1 9.5 20h-1A1.5 1.5 0 0 1 7 18.5v-13zm6 0A1.5 1.5 0 0 1 14.5 4h1A1.5 1.5 0 0 1 17 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-13z",
-  next: "M6 5.5v13a1 1 0 0 0 1.53.85l10.2-6.5a1 1 0 0 0 0-1.7L7.53 4.65A1 1 0 0 0 6 5.5zM19 4a1 1 0 0 1 1 1v14a1 1 0 1 1-2 0V5a1 1 0 0 1 1-1z",
-  prev: "M18 5.5v13a1 1 0 0 1-1.53.85l-10.2-6.5a1 1 0 0 1 0-1.7l10.2-6.5A1 1 0 0 1 18 5.5zM5 4a1 1 0 0 0-1 1v14a1 1 0 1 0 2 0V5a1 1 0 0 0-1-1z",
+  play: "M8 5v14l11-7z",
+  pause: "M6 19h4V5H6v14zm8-14v14h4V5h-4z",
+  next: "M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z",
+  prev: "M6 6h2v12H6zm3.5 6l8.5 6V6z",
   shuffle:
-    "M3 6.5A1.5 1.5 0 0 1 4.5 5h2.1c.8 0 1.57.32 2.14.89l3.06 3.06a1 1 0 0 1-1.41 1.42L7.32 7.3a.5.5 0 0 0-.36-.15h-2.1A.35.35 0 0 1 4.5 6.8h-1.5zM3 17.5a1.5 1.5 0 0 0 1.5 1.5h2.1c.4 0 .78-.16 1.06-.44l7.47-7.47a.5.5 0 0 1 .36-.15h2.51a.5.5 0 0 1 .35.85l-1.5 1.5a.5.5 0 0 1-.7 0l-.8-.8-3.63 3.63-1.5 1.5a2.5 2.5 0 0 1-1.77.73h-2.6A1.5 1.5 0 0 1 3 17.5zm18-11a1.5 1.5 0 0 0-1.5-1.5h-2.1c-.4 0-.78.16-1.06.44l-1.94 1.94a1 1 0 0 0 1.41 1.42l1.5-1.5a.5.5 0 0 1 .35-.15h2.1a.5.5 0 0 1 .35.85l-1.5 1.5a.5.5 0 0 1-.71 0l-.8-.8-1.44 1.44a1 1 0 0 0 1.41 1.42l1.94-1.94c.28-.28.66-.44 1.06-.44h.09a1.5 1.5 0 0 0 1.2-.6z",
-  repeat: "M7 7.5h10a1 1 0 0 1 1 1v3a1 1 0 1 0 2 0v-3a3 3 0 0 0-3-3H7V3.8a.6.6 0 0 0-.98-.47l-3.4 2.8a.6.6 0 0 0 0 .94l3.4 2.8a.6.6 0 0 0 .98-.47V7.5zM17 16.5H7a1 1 0 0 1-1-1v-3a1 1 0 1 0-2 0v3a3 3 0 0 0 3 3h10v1.7a.6.6 0 0 0 .98.47l3.4-2.8a.6.6 0 0 0 0-.94l-3.4-2.8a.6.6 0 0 0-.98.47v1.9z",
+    "M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z",
+  repeat:
+    "M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z",
   repeatOne:
-    "M7 7.5h8.5a1 1 0 0 1 1 1v3a1 1 0 1 0 2 0v-3a3 3 0 0 0-3-3H7V3.8a.6.6 0 0 0-.98-.47l-3.4 2.8a.6.6 0 0 0 0 .94l3.4 2.8a.6.6 0 0 0 .98-.47V7.5zM17 16.5h-8.5a1 1 0 0 1-1-1v-3a1 1 0 1 0-2 0v3a3 3 0 0 0 3 3H17v1.7a.6.6 0 0 0 .98.47l3.4-2.8a.6.6 0 0 0 0-.94l-3.4-2.8a.6.6 0 0 0-.98.47v1.9zM11 10.5a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-1.3l-.6.4a1 1 0 0 1-1.05-1.7l1.8-1.2a1 1 0 0 1 .85-.2z",
-  volume: "M3.5 9.5v5h2.8l3.9 3.2a.6.6 0 0 0 .98-.47V6.77a.6.6 0 0 0-.98-.47l-3.9 3.2h-2.8zM16.7 7.3a1 1 0 0 1 1.4 0A5.9 5.9 0 0 1 20 12a5.9 5.9 0 0 1-1.9 4.7 1 1 0 0 1-1.32-1.5A3.9 3.9 0 0 0 18 12c0-1.13-.45-2.2-1.3-3.2a1 1 0 0 1 0-1.5z",
-  mute: "M3.5 9.5v5h2.8l3.9 3.2a.6.6 0 0 0 .98-.47v-10.5a.6.6 0 0 0-.98-.47l-3.9 3.2h-2.8zM16.4 8.6a1 1 0 0 1 1.4 0l1.2 1.2 1.2-1.2a1 1 0 1 1 1.4 1.4l-1.2 1.2 1.2 1.2a1 1 0 0 1-1.4 1.4l-1.2-1.2-1.2 1.2a1 1 0 0 1-1.4-1.4l1.2-1.2-1.2-1.2a1 1 0 0 1 0-1.4z",
+    "M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zM13 15V9h-1l-2 1v1h1.5v4H13z",
+  volume:
+    "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z",
+  mute: "M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z",
   search:
-    "M10.5 4a6.5 6.5 0 1 0 4.02 11.55l4.24 4.24a1 1 0 0 0 1.41-1.41l-4.24-4.24A6.5 6.5 0 0 0 10.5 4zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z",
-  trending:
-    "M4 20v-9h4v9H4zm6 0V5h4v15h-4zm6 0v-12h4v12h-4z",
-  user:
-    "M12 11.5a4.75 4.75 0 1 0 0-9.5 4.75 4.75 0 0 0 0 9.5zm0 2c-5.4 0-9.5 2.8-9.5 6.4V22h19v-2.1c0-3.6-4.1-6.4-9.5-6.4z",
-  home: "M12 3.6a1.6 1.6 0 0 1 1.1.44l6.6 6.3a1.6 1.6 0 0 1 .5 1.15V19a1.6 1.6 0 0 1-1.6 1.6h-3.4a1 1 0 0 1-1-1v-4.2a.8.8 0 0 0-.8-.8h-2.8a.8.8 0 0 0-.8.8V19.6a1 1 0 0 1-1 1H5.4A1.6 1.6 0 0 1 3.8 19v-7.51a1.6 1.6 0 0 1 .5-1.15l6.6-6.3a1.6 1.6 0 0 1 1.1-.44z",
-  close: "M6.4 5.3a1 1 0 0 0-1.4 1.4L10.6 12l-5.6 5.3a1 1 0 1 0 1.4 1.4l5.6-5.3 5.6 5.3a1 1 0 0 0 1.4-1.4L13.4 12l5.6-5.3a1 1 0 0 0-1.4-1.4L12 10.6 6.4 5.3z",
-  queue: "M4 6h10a1 1 0 1 0 0-2H4a1 1 0 1 0 0 2zm0 4h10a1 1 0 1 0 0-2H4a1 1 0 1 0 0 2zm0 4h6a1 1 0 1 0 0-2H4a1 1 0 1 0 0 2zm13.5-2.3a1 1 0 0 1 1.5.87v6.86a1 1 0 0 1-1.5.87l-5.4-3.4a1 1 0 0 1 0-1.74l5.4-3.43z",
-  music: "M9 3.6a1 1 0 0 1 .79-.98l8-1.8a1 1 0 0 1 1.2.98v11.5a3 3 0 0 1 .6-.07c1.9 0 3.4 1.3 3.4 3s-1.5 3-3.4 3-3.4-1.3-3.4-3V6.7l-6 1.35v8.28a3 3 0 0 1 .6-.07c1.9 0 3.4 1.3 3.4 3s-1.5 3-3.4 3-3.4-1.3-3.4-3V3.6z",
-  arrowDown: "M12 4a1 1 0 0 1 1 1v12.6l5.3-5.3a1 1 0 1 1 1.4 1.4l-7 7a1 1 0 0 1-1.4 0l-7-7a1 1 0 1 1 1.4-1.4l5.3 5.3V5a1 1 0 0 1 1-1z",
+    "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z",
+  trending: "M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z",
+  user: "M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z",
+  home: "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z",
+  close:
+    "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z",
+  queue:
+    "M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z",
+  music:
+    "M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z",
+  arrowDown: "M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z",
+  playlist:
+    "M4 10h12v2H4zm0-4h12v2H4zm0 8h8v2H4zm10 0v6l5-3z",
+  add: "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z",
+  fx: "M7 18h2V6H7v12zm4 4h2V2h-2v20zm-8-8h2v-4H3v4zm12 4h2V10h-2v8zm4-8h2V8h-2v2z",
+  library:
+    "M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 5h-3v5.5c0 1.38-1.12 2.5-2.5 2.5S10 13.88 10 12.5s1.12-2.5 2.5-2.5c.57 0 1.08.19 1.5.51V5h4v2zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z",
+  chevronL: "M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z",
+  chevronR: "M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z",
+  expand: "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z",
 };
 
-// ---------- Cover art ----------
 const FALLBACK_ARTS = [
   "/illustrations/vinyl-wave.webp",
   "/illustrations/headphone-peaks.webp",
@@ -69,6 +89,8 @@ export function Cover({
   className = "",
   rounded = "rounded-lg",
   sizeClass,
+  priority = false,
+  circle = false,
 }: {
   src?: string;
   title?: string;
@@ -76,29 +98,40 @@ export function Cover({
   className?: string;
   rounded?: string;
   sizeClass?: string;
+  priority?: boolean;
+  circle?: boolean;
 }) {
+  const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const shape = circle ? "rounded-full" : rounded;
+  const px = sizeClass ? 240 : size <= 56 ? 120 : size <= 120 ? 240 : 480;
+  const url = !failed ? sizedThumb(src, px) : undefined;
+  const fb = fallbackArt(title);
+
   return (
     <div
-      className={`${rounded} bg-elev shrink-0 overflow-hidden relative flex items-center justify-center ${sizeClass ?? ""} ${className}`}
+      className={`${shape} bg-elev shrink-0 overflow-hidden relative flex items-center justify-center ${sizeClass ?? ""} ${className}`}
       style={sizeClass ? undefined : { width: size, height: size }}
     >
-      {src ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt={title} className="w-full h-full object-cover" loading="lazy" />
-      ) : (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={fallbackArt(title)}
-          alt=""
-          className="w-full h-full object-cover opacity-70 bg-gradient-to-br from-[#151515] to-[#0a0a0a]"
-          loading="lazy"
-        />
-      )}
+      <img
+        src={url || fb}
+        alt={title}
+        width={size}
+        height={size}
+        decoding="async"
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "low"}
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          if (!failed) setFailed(true);
+        }}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"} ${!url ? "opacity-70" : ""}`}
+      />
+      {!loaded && <div className="absolute inset-0 skeleton" />}
     </div>
   );
 }
 
-// ---------- Equalizer animasi ----------
 export function Equalizer({ size = 14, active = false }: { size?: number; active?: boolean }) {
   return (
     <div className={`flex items-end gap-[2px] ${active ? "" : "eq-paused"}`} style={{ height: size }}>
@@ -113,7 +146,6 @@ export function Equalizer({ size = 14, active = false }: { size?: number; active
   );
 }
 
-// ---------- Format angka ----------
 export function useThumb(t?: string[]): string | undefined {
-  return bestThumb(t);
+  return pickThumb(t, 240);
 }

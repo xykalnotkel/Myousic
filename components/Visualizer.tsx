@@ -206,7 +206,8 @@ function drawSnake(
 
 export default function Visualizer({ variant = "bar", className, demo = false }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { analyser, playing } = usePlayer();
+  const { analyser, playing, engine } = usePlayer();
+  const live = !demo && !!analyser && engine === "audio";
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -242,18 +243,22 @@ export default function Visualizer({ variant = "bar", className, demo = false }:
       const an = analyser;
       if (demo || !an) {
         synthFreq(freq, t);
+        for (let i = 0; i < wave.length; i++) {
+          wave[i] = 128 + Math.sin(t * 8 + i * 0.04) * 28 * (playing ? 1 : 0.35);
+        }
       } else {
         an.getByteFrequencyData(freq);
         an.getByteTimeDomainData(wave);
       }
 
-      // deteksi beat dari energi bass
+      // deteksi beat dari energi bass (lebih peka kalau analyser hidup)
       let bass = 0;
-      for (let i = 1; i < 12; i++) bass += freq[i];
-      bass = bass / (11 * 255);
-      const env = Math.max(bass, prevBass * 0.88);
+      for (let i = 1; i < 14; i++) bass += freq[i];
+      bass = bass / (13 * 255);
+      const env = Math.max(bass, prevBass * 0.86);
       const now = performance.now();
-      if (!demo && an && playing && bass > 0.55 && bass > env * 1.03 && now - lastBeatAt > 300) {
+      const thresh = live ? 0.42 : 0.55;
+      if (!demo && an && playing && bass > thresh && bass > env * 1.02 && now - lastBeatAt > 220) {
         lastBeatAt = now;
         beatBoost = 1;
         (window as any).__kainetBeat?.beatNow();
@@ -293,7 +298,7 @@ export default function Visualizer({ variant = "bar", className, demo = false }:
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [analyser, variant, playing, demo]);
+  }, [analyser, variant, playing, demo, live]);
 
   return <canvas ref={canvasRef} className={className} aria-hidden />;
 }

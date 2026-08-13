@@ -1,7 +1,8 @@
 "use client";
 
-// Konteks pemutar: queue, kontrol, audio element, Web Audio (analyser untuk visualizer & beat)
-// Fallback: YouTube IFrame (IP user) kalau InnerTube di Vercel kena bot-check.
+// Pemutar: HTMLAudio + Web Audio (FX/visualizer) + fallback YouTube IFrame.
+// Stream dipasang di belakang iframe supaya suara cepat, gelombang jadi nyata
+// begitu URL audio siap.
 import {
   createContext,
   useCallback,
@@ -14,6 +15,8 @@ import {
 import type { ReactNode } from "react";
 import type { Track } from "@/lib/types";
 import { createYtHandle, type YtHandle } from "@/lib/ytPlayer";
+import { DEFAULT_FX, loadFx, makeImpulse, saveFx, type AudioFx } from "@/lib/audioFx";
+import { pickThumb } from "@/lib/thumbs";
 
 interface PlayerCtx {
   queue: Track[];
@@ -43,6 +46,9 @@ interface PlayerCtx {
   fullOpen: boolean;
   openFull: () => void;
   closeFull: () => void;
+  engine: "audio" | "yt";
+  fx: AudioFx;
+  setFx: (p: Partial<AudioFx>) => void;
 }
 
 const Ctx = createContext<PlayerCtx | null>(null);
@@ -76,10 +82,20 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [repeat, setRepeat] = useState<"off" | "all" | "one">("off");
   const [beatVersion, setBeatVersion] = useState(0);
   const [fullOpen, setFullOpen] = useState(false);
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
+  const [engine, setEngine] = useState<"audio" | "yt">("audio");
+  const [fx, setFxState] = useState<AudioFx>(DEFAULT_FX);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const ctxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const fxNodes = useRef<{
+    dry: GainNode;
+    wet: GainNode;
+    bass: BiquadFilterNode;
+    comp: DynamicsCompressorNode;
+    conv: ConvolverNode;
+  } | null>(null);
   const orderRef = useRef<number[]>([]);
   const posRef = useRef(0);
   const lastBeatRef = useRef(0);
@@ -90,16 +106,20 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const genRef = useRef(0);
   const volumeRef = useRef(0.8);
   const mutedRef = useRef(false);
+  const fxRef = useRef<AudioFx>(DEFAULT_FX);
   indexRef.current = index;
   queueRef.current = queue;
   volumeRef.current = volume;
   mutedRef.current = muted;
+  engineRef.current = engine;
+  fxRef.current = fx;
 
-  // init audio element + web audio
   useEffect(() => {
     const audio = new Audio();
     audio.preload = "auto";
     audio.crossOrigin = "anonymous";
+    audio.setAttribute("playsinline", "true");
+    (audio as any).playsInline = true;
     audioRef.current = audio;
     (window as any).__kainetAudio = audio;
 
@@ -124,25 +144,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audio.addEventListener("error", () => {
       if (engineRef.current !== "audio") return;
       setLoading(false);
-      const src = audio.currentSrc || audio.src;
-      let msg = "Gagal memuat stream audio";
-      const aerr = (audio as any).error;
-      if (aerr) {
-        if (aerr.code === 4) msg = "Tidak ada sumber audio yang didukung";
-        else if (aerr.message) msg = aerr.message;
-      }
-      setError(`${msg}. Mencoba pemutar YouTube…`);
-      if (src && src.includes("/api/stream/")) {
-        fetch(src, { headers: { Range: "bytes=0-400" } })
-          .then(async (r) => {
-            const ct = r.headers.get("content-type") || "";
-            if (ct.includes("json")) {
-              const j = await r.json().catch(() => null);
-              if (j?.error) setError(`${j.error}. Mencoba pemutar YouTube…`);
-            }
-          })
-          .catch(() => {});
-      }
     });
     audio.addEventListener("ended", () => {
       if (engineRef.current !== "audio") return;
@@ -158,6 +159,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (s === "1") setShuffle(true);
       const r = localStorage.getItem("km:repeat") as "off" | "all" | "one" | null;
       if (r) setRepeat(r);
+      setFxState(loadFx());
     } catch {}
 
     return () => {
@@ -170,20 +172,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const CtxHolder = useMemo(
-    () => ({
-      get: () => apiRef.current,
-    }),
-    []
-  );
+  const CtxHolder = useMemo(() => ({ get: () => apiRef.current }), []);
   const apiRef = useRef<any>(null);
 
-  useEffect(() => {
-    setVolumeState((v) => {
-      if (audioRef.current) audioRef.current.volume = v;
-      return v;
-    });
-  }, []);
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
     ytRef.current?.setVolume(volume);
@@ -205,7 +196,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, [shuffle, repeat]);
 
-  // poll posisi untuk engine YouTube
+  const applyFx = useCallback((next: AudioFx) => {
+    const n = fxNodes.current;
+    const an = analyserRef.current;
+    if (!n) return;
+    n.wet.gain.value = next.reverb;
+    n.dry.gain.value = 1 - next.reverb * 0.65;
+    n.bass.gain.value = next.bass * 14;
+    n.comp.threshold.value = -8 - next.smooth * 18;
+    n.comp.ratio.value = 2 + next.smooth * 6;
+    if (an) an.smoothingTimeConstant = 0.35 + next.smooth * 0.5;
+  }, []);
+
+  useEffect(() => {
+    applyFx(fx);
+    saveFx(fx);
+  }, [fx, applyFx]);
+
   useEffect(() => {
     const id = window.setInterval(() => {
       if (engineRef.current !== "yt" || !ytRef.current) return;
@@ -217,20 +224,41 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const ensureCtx = useCallback(() => {
     if (!ctxRef.current) {
-      const AC =
-        (window as any).AudioContext || (window as any).webkitAudioContext;
+      const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
       const ac = new AC();
       const src = ac.createMediaElementSource(audioRef.current!);
       const an = ac.createAnalyser();
-      an.fftSize = 1024;
-      an.smoothingTimeConstant = 0.78;
+      an.fftSize = 2048;
+      an.smoothingTimeConstant = 0.55;
+      const bass = ac.createBiquadFilter();
+      bass.type = "lowshelf";
+      bass.frequency.value = 180;
+      const dry = ac.createGain();
+      const wet = ac.createGain();
+      const conv = ac.createConvolver();
+      conv.buffer = makeImpulse(ac);
+      const comp = ac.createDynamicsCompressor();
+      comp.knee.value = 12;
+      comp.attack.value = 0.008;
+      comp.release.value = 0.22;
+
       src.connect(an);
-      an.connect(ac.destination);
+      src.connect(bass);
+      bass.connect(dry);
+      bass.connect(conv);
+      conv.connect(wet);
+      dry.connect(comp);
+      wet.connect(comp);
+      comp.connect(ac.destination);
+
+      fxNodes.current = { dry, wet, bass, comp, conv };
       ctxRef.current = ac;
       analyserRef.current = an;
+      setAnalyser(an);
+      applyFx(fxRef.current);
     }
     if (ctxRef.current && ctxRef.current.state === "suspended") ctxRef.current.resume();
-  }, []);
+  }, [applyFx]);
 
   const ensureYt = useCallback(() => {
     if (ytRef.current) return ytRef.current;
@@ -275,8 +303,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const q = [tr.title, tr.artist].filter(Boolean).join(" ");
       const streamPath = `/api/stream/${encodeURIComponent(tr.id)}${q ? `?q=${encodeURIComponent(q)}` : ""}`;
 
-      // 1) YouTube IFrame dulu — request dari IP user, lolos bot-check Vercel
+      // 1) IFrame dulu — cepat, dari IP user
       try {
+        setEngine("yt");
         engineRef.current = "yt";
         try {
           audio.pause();
@@ -290,27 +319,55 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         if (gen !== genRef.current) return;
         setLoading(false);
         setError(null);
-        return;
-      } catch (e: any) {
+      } catch {
         if (gen !== genRef.current) return;
-        // lanjut ke proxy stream
       }
 
-      // 2) fallback: proxy InnerTube (kadang masih lolos untuk video non-Topic)
-      try {
-        engineRef.current = "audio";
-        ytRef.current?.pause();
-        audio.crossOrigin = "anonymous";
-        audio.src = streamPath;
-        audio.load();
-        await audio.play();
-        if (gen !== genRef.current) return;
-      } catch (e: any) {
-        if (e?.name === "AbortError") return;
-        if (gen !== genRef.current) return;
-        setError(e?.message || "Gagal memutar. Gunakan tombol Lewati.");
-        setLoading(false);
-      }
+      // 2) di belakang: coba stream supaya visualizer + FX nyata
+      (async () => {
+        try {
+          const probe = audio;
+          probe.crossOrigin = "anonymous";
+          probe.src = streamPath;
+          await new Promise<void>((resolve, reject) => {
+            const ok = () => {
+              cleanup();
+              resolve();
+            };
+            const bad = () => {
+              cleanup();
+              reject(new Error("no"));
+            };
+            const cleanup = () => {
+              probe.removeEventListener("canplay", ok);
+              probe.removeEventListener("error", bad);
+            };
+            probe.addEventListener("canplay", ok);
+            probe.addEventListener("error", bad);
+            probe.load();
+            setTimeout(bad, 9000);
+          });
+          if (gen !== genRef.current) return;
+          const t = ytRef.current?.getCurrentTime() || 0;
+          engineRef.current = "audio";
+          setEngine("audio");
+          try {
+            ytRef.current?.pause();
+          } catch {}
+          if (isFinite(t) && t > 0.4) {
+            try {
+              probe.currentTime = t;
+            } catch {}
+          }
+          probe.volume = volumeRef.current;
+          probe.muted = mutedRef.current;
+          await probe.play();
+          if (gen !== genRef.current) return;
+          setError(null);
+        } catch {
+          /* tetap di iframe */
+        }
+      })();
     },
     [ensureCtx, ensureYt]
   );
@@ -440,10 +497,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const setVolume = useCallback((v: number) => {
-    setVolumeState(Math.min(1, Math.max(0, v)));
-    if (v > 0 && muted) setMuted(false);
-  }, [muted]);
+  const setVolume = useCallback(
+    (v: number) => {
+      setVolumeState(Math.min(1, Math.max(0, v)));
+      if (v > 0 && muted) setMuted(false);
+    },
+    [muted]
+  );
 
   const toggleMute = useCallback(() => setMuted((m) => !m), []);
   const toggleShuffle = useCallback(() => setShuffle((s) => !s), []);
@@ -451,11 +511,57 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     () => setRepeat((r) => (r === "off" ? "all" : r === "all" ? "one" : "off")),
     []
   );
+  const setFx = useCallback((p: Partial<AudioFx>) => {
+    setFxState((prev) => ({ ...prev, ...p }));
+  }, []);
+
+  const current = index >= 0 ? queue[index] ?? null : null;
+
+  // Media Session — kontrol dari lockscreen / notifikasi (background play)
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    const ms = navigator.mediaSession;
+    if (!current?.title) {
+      ms.metadata = null;
+      return;
+    }
+    const art = pickThumb(current.thumbnails, 320);
+    try {
+      ms.metadata = new MediaMetadata({
+        title: current.title || "Myousic",
+        artist: current.artist || "",
+        album: current.album || "Myousic",
+        artwork: art
+          ? [
+              { src: art, sizes: "256x256", type: "image/jpeg" },
+              { src: art, sizes: "512x512", type: "image/jpeg" },
+            ]
+          : [],
+      });
+    } catch {}
+    ms.playbackState = playing ? "playing" : "paused";
+    const bind = (name: MediaSessionAction, fn: () => void) => {
+      try {
+        ms.setActionHandler(name, fn);
+      } catch {}
+    };
+    bind("play", () => apiRef.current?.toggle());
+    bind("pause", () => apiRef.current?.toggle());
+    bind("previoustrack", () => apiRef.current?.prev());
+    bind("nexttrack", () => apiRef.current?.next());
+    bind("seekbackward", () => apiRef.current?.seek(Math.max(0, (apiRef.current?.currentTime || 0) - 10)));
+    bind("seekforward", () => apiRef.current?.seek((apiRef.current?.currentTime || 0) + 10));
+    try {
+      if (duration > 0) {
+        ms.setPositionState({ duration, playbackRate: 1, position: Math.min(currentTime, duration) });
+      }
+    } catch {}
+  }, [current, playing, duration, currentTime]);
 
   const value: PlayerCtx = {
     queue,
     index,
-    current: index >= 0 ? queue[index] ?? null : null,
+    current,
     playing,
     loading,
     error,
@@ -475,11 +581,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     toggleMute,
     toggleShuffle,
     cycleRepeat,
-    analyser: analyserRef.current,
+    analyser,
     beatVersion,
     fullOpen,
     openFull: () => setFullOpen(true),
     closeFull: () => setFullOpen(false),
+    engine,
+    fx,
+    setFx,
   };
 
   apiRef.current = value;
