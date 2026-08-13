@@ -1,6 +1,7 @@
 "use client";
 
 // Konteks pemutar: queue, kontrol, audio element, Web Audio (analyser untuk visualizer & beat)
+// Fallback: YouTube IFrame (IP user) kalau InnerTube di Vercel kena bot-check.
 import {
   createContext,
   useCallback,
@@ -12,6 +13,7 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import type { Track } from "@/lib/types";
+import { createYtHandle, type YtHandle } from "@/lib/ytPlayer";
 
 interface PlayerCtx {
   queue: Track[];
@@ -79,12 +81,19 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const ctxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const orderRef = useRef<number[]>([]);
-  const posRef = useRef(0); // posisi di urutan shuffle
+  const posRef = useRef(0);
   const lastBeatRef = useRef(0);
   const indexRef = useRef(-1);
   const queueRef = useRef<Track[]>([]);
+  const engineRef = useRef<"audio" | "yt">("audio");
+  const ytRef = useRef<YtHandle | null>(null);
+  const genRef = useRef(0);
+  const volumeRef = useRef(0.8);
+  const mutedRef = useRef(false);
   indexRef.current = index;
   queueRef.current = queue;
+  volumeRef.current = volume;
+  mutedRef.current = muted;
 
   // init audio element + web audio
   useEffect(() => {
@@ -92,15 +101,28 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audio.preload = "auto";
     audio.crossOrigin = "anonymous";
     audioRef.current = audio;
-    (window as any).__kainetAudio = audio; // untuk keyboard shortcut & debug
+    (window as any).__kainetAudio = audio;
 
-    audio.addEventListener("timeupdate", () => setCurrentTime(audio.currentTime));
-    audio.addEventListener("durationchange", () => setDuration(audio.duration || 0));
-    audio.addEventListener("play", () => setPlaying(true));
-    audio.addEventListener("pause", () => setPlaying(false));
-    audio.addEventListener("waiting", () => setLoading(true));
-    audio.addEventListener("playing", () => setLoading(false));
+    audio.addEventListener("timeupdate", () => {
+      if (engineRef.current === "audio") setCurrentTime(audio.currentTime);
+    });
+    audio.addEventListener("durationchange", () => {
+      if (engineRef.current === "audio") setDuration(audio.duration || 0);
+    });
+    audio.addEventListener("play", () => {
+      if (engineRef.current === "audio") setPlaying(true);
+    });
+    audio.addEventListener("pause", () => {
+      if (engineRef.current === "audio") setPlaying(false);
+    });
+    audio.addEventListener("waiting", () => {
+      if (engineRef.current === "audio") setLoading(true);
+    });
+    audio.addEventListener("playing", () => {
+      if (engineRef.current === "audio") setLoading(false);
+    });
     audio.addEventListener("error", () => {
+      if (engineRef.current !== "audio") return;
       setLoading(false);
       const src = audio.currentSrc || audio.src;
       let msg = "Gagal memuat stream audio";
@@ -109,27 +131,24 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         if (aerr.code === 4) msg = "Tidak ada sumber audio yang didukung";
         else if (aerr.message) msg = aerr.message;
       }
-      setError(`${msg}. Gunakan tombol Lewati.`);
-      // API stream mengembalikan JSON error (bukan audio) — ambil pesannya
+      setError(`${msg}. Mencoba pemutar YouTube…`);
       if (src && src.includes("/api/stream/")) {
         fetch(src, { headers: { Range: "bytes=0-400" } })
           .then(async (r) => {
             const ct = r.headers.get("content-type") || "";
             if (ct.includes("json")) {
               const j = await r.json().catch(() => null);
-              if (j?.error) setError(`${j.error}. Gunakan tombol Lewati.`);
+              if (j?.error) setError(`${j.error}. Mencoba pemutar YouTube…`);
             }
           })
           .catch(() => {});
       }
     });
     audio.addEventListener("ended", () => {
-      // dilewati ke next (auto)
-      const ctx = CtxHolder.get();
-      ctx?.next(true);
+      if (engineRef.current !== "audio") return;
+      CtxHolder.get()?.next(true);
     });
 
-    // pulihkan preferensi
     try {
       const v = localStorage.getItem("km:vol");
       if (v != null) setVolumeState(Number(v));
@@ -146,10 +165,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       audio.src = "";
       audio.remove();
       ctxRef.current?.close().catch(() => {});
+      ytRef.current?.destroy();
+      ytRef.current = null;
     };
   }, []);
 
-  // holder agar 'ended' listener bisa akses next() tanpa re-register
   const CtxHolder = useMemo(
     () => ({
       get: () => apiRef.current,
@@ -166,12 +186,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
+    ytRef.current?.setVolume(volume);
     try {
       localStorage.setItem("km:vol", String(volume));
     } catch {}
   }, [volume]);
   useEffect(() => {
     if (audioRef.current) audioRef.current.muted = muted;
+    ytRef.current?.setMuted(muted);
     try {
       localStorage.setItem("km:mute", muted ? "1" : "0");
     } catch {}
@@ -183,7 +205,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, [shuffle, repeat]);
 
-  // pastikan audio context dibuat/resume saat ada interaksi
+  // poll posisi untuk engine YouTube
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (engineRef.current !== "yt" || !ytRef.current) return;
+      setCurrentTime(ytRef.current.getCurrentTime());
+      setDuration(ytRef.current.getDuration());
+    }, 250);
+    return () => window.clearInterval(id);
+  }, []);
+
   const ensureCtx = useCallback(() => {
     if (!ctxRef.current) {
       const AC =
@@ -201,29 +232,102 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (ctxRef.current && ctxRef.current.state === "suspended") ctxRef.current.resume();
   }, []);
 
-  // set sumber stream untuk track
+  const ensureYt = useCallback(() => {
+    if (ytRef.current) return ytRef.current;
+    const handle = createYtHandle({
+      onPlay: () => {
+        if (engineRef.current === "yt") {
+          setPlaying(true);
+          setLoading(false);
+        }
+      },
+      onPause: () => {
+        if (engineRef.current === "yt") setPlaying(false);
+      },
+      onEnded: () => {
+        if (engineRef.current === "yt") CtxHolder.get()?.next(true);
+      },
+      onError: (msg) => {
+        if (engineRef.current === "yt") {
+          setLoading(false);
+          setError(`${msg}. Gunakan tombol Lewati.`);
+        }
+      },
+    });
+    ytRef.current = handle;
+    return handle;
+  }, []);
+
   const loadTrack = useCallback(
     async (tr: Track) => {
       const audio = audioRef.current!;
+      const gen = ++genRef.current;
       ensureCtx();
       setError(null);
+      setCurrentTime(0);
+      setDuration(0);
       if (!tr?.id) {
         setError("Lagu ini tidak punya video id");
         return;
       }
       setLoading(true);
+
+      const q = [tr.title, tr.artist].filter(Boolean).join(" ");
+      const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+      const streamPath = `/api/stream/${encodeURIComponent(tr.id)}${qs}`;
+
+      let useAudio = false;
       try {
-        audio.crossOrigin = "anonymous";
-        audio.src = `/api/stream/${encodeURIComponent(tr.id)}`;
-        audio.load();
-        await audio.play();
-      } catch (e: any) {
-        if (e?.name === "AbortError") return;
-        setError(e?.message || "Gagal memutar");
-        setLoading(false);
+        const info = await fetch(`/api/stream/${encodeURIComponent(tr.id)}?debug=1${q ? `&q=${encodeURIComponent(q)}` : ""}`, {
+          cache: "no-store",
+        }).then((r) => r.json());
+        if (gen !== genRef.current) return;
+        useAudio = !!info?.ok;
+      } catch {
+        useAudio = false;
+      }
+      if (gen !== genRef.current) return;
+
+      if (useAudio) {
+        engineRef.current = "audio";
+        try {
+          ytRef.current?.pause();
+        } catch {}
+        try {
+          audio.crossOrigin = "anonymous";
+          audio.src = streamPath;
+          audio.load();
+          await audio.play();
+        } catch (e: any) {
+          if (e?.name === "AbortError") return;
+          // lanjut ke iframe
+          useAudio = false;
+        }
+      }
+
+      if (!useAudio) {
+        if (gen !== genRef.current) return;
+        engineRef.current = "yt";
+        try {
+          audio.pause();
+          audio.removeAttribute("src");
+          audio.load();
+        } catch {}
+        try {
+          const yt = ensureYt();
+          yt.setVolume(volumeRef.current);
+          yt.setMuted(mutedRef.current);
+          await yt.load(tr.id);
+          if (gen !== genRef.current) return;
+          setLoading(false);
+        } catch (e: any) {
+          if (gen !== genRef.current) return;
+          setError(e?.message || "Gagal memutar");
+          setLoading(false);
+        }
       }
     },
-    [ensureCtx]
+    [ensureCtx, ensureYt]
   );
 
   const playAt = useCallback(
@@ -231,7 +335,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const q = queueRef.current;
       if (!q[i]) return;
       setIndex(i);
-      // urutan shuffle di-reset
       orderRef.current = shuffledIndexes(q.length);
       posRef.current = orderRef.current.indexOf(i);
       loadTrack(q[i]);
@@ -253,22 +356,32 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   );
 
   const toggle = useCallback(() => {
+    if (engineRef.current === "yt" && ytRef.current) {
+      if (playing) ytRef.current.pause();
+      else ytRef.current.play();
+      return;
+    }
     const audio = audioRef.current;
     if (!audio || !audio.src) return;
     ensureCtx();
     if (audio.paused) audio.play().catch(() => {});
     else audio.pause();
-  }, [ensureCtx]);
+  }, [ensureCtx, playing]);
 
   const next = useCallback(
     (auto = false) => {
       const q = queueRef.current;
       if (!q.length) return;
-      const audio = audioRef.current;
       if (repeat === "one" && auto) {
-        if (audio) {
-          audio.currentTime = 0;
-          audio.play().catch(() => {});
+        if (engineRef.current === "yt") {
+          ytRef.current?.seek(0);
+          ytRef.current?.play();
+        } else {
+          const audio = audioRef.current;
+          if (audio) {
+            audio.currentTime = 0;
+            audio.play().catch(() => {});
+          }
         }
         return;
       }
@@ -280,7 +393,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
             orderRef.current = shuffledIndexes(q.length);
             posRef.current = 0;
           } else {
-            // off & auto → berhenti
             setPlaying(false);
             return;
           }
@@ -303,9 +415,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   );
 
   const prev = useCallback(() => {
-    const audio = audioRef.current;
-    if (audio && audio.currentTime > 3) {
-      audio.currentTime = 0;
+    const t =
+      engineRef.current === "yt"
+        ? ytRef.current?.getCurrentTime() || 0
+        : audioRef.current?.currentTime || 0;
+    if (t > 3) {
+      if (engineRef.current === "yt") ytRef.current?.seek(0);
+      else if (audioRef.current) audioRef.current.currentTime = 0;
       return;
     }
     const q = queueRef.current;
@@ -327,6 +443,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [shuffle, loadTrack]);
 
   const seek = useCallback((t: number) => {
+    if (engineRef.current === "yt" && ytRef.current) {
+      ytRef.current.seek(t);
+      setCurrentTime(t);
+      return;
+    }
     const audio = audioRef.current;
     if (audio && isFinite(audio.duration)) {
       audio.currentTime = t;
@@ -378,7 +499,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   apiRef.current = value;
 
-  // beat ticker: dipicu dari canvas (agar komponen lain bisa ikut pulse)
   useEffect(() => {
     const onBeat = () => setBeatVersion((b) => b + 1);
     window.addEventListener("kainet:beat", onBeat);

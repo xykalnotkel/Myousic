@@ -51,7 +51,7 @@ const CLIENTS: YtClient[] = [
     name: "ANDROID",
     clientName: "ANDROID",
     clientVersion: "21.20.36",
-    ua: "com.google.android.youtube/21.20.36 (Linux; U; Android 14; en_US; Pixel 8; Build/AP2A.240805.005)",
+    ua: "com.google.android.youtube/21.20.36 (Linux; U; Android 14; en_US; sdk_gphone64_x86_64; GoogleTV; 1080p)",
     origin: "https://www.youtube.com",
     endpoint: "https://www.youtube.com/youtubei/v1/player",
     extra: { androidSdkVersion: 34, osName: "Android", osVersion: "14" },
@@ -213,7 +213,10 @@ export function invalidateStream(videoId: string) {
   cache.delete(videoId);
 }
 
-export async function getStreamSource(videoId: string): Promise<StreamSource> {
+export async function getStreamSource(
+  videoId: string,
+  opts?: { quick?: boolean }
+): Promise<StreamSource> {
   const id = videoId.trim();
   if (!/^[A-Za-z0-9_-]{11}$/.test(id)) {
     throw new Error("Video id tidak valid");
@@ -224,8 +227,10 @@ export async function getStreamSource(videoId: string): Promise<StreamSource> {
     return hit;
   }
 
+  const list = opts?.quick ? CLIENTS.filter((c) => c.name === "IOS" || c.name === "ANDROID") : CLIENTS;
+
   const reasons: string[] = [];
-  for (const client of CLIENTS) {
+  for (const client of list) {
     try {
       const out = await tryClient(id, client);
       if ("src" in out) {
@@ -245,4 +250,37 @@ export async function getStreamSource(videoId: string): Promise<StreamSource> {
   throw new Error(
     `Video tidak dapat diputar. ${reasons.slice(0, 3).join(" · ") || "tidak ada format stream"}`
   );
+}
+
+// Lagu "Topic" YouTube Music sering diblokir dari IP Vercel.
+// Cari video resmi/cover yang masih mengembalikan URL, lalu putar itu.
+export async function resolveStream(
+  videoId: string,
+  query?: string | null
+): Promise<StreamSource> {
+  try {
+    return await getStreamSource(videoId);
+  } catch (first) {
+    const q = query?.trim();
+    if (!q) throw first;
+    let results: { id?: string }[] = [];
+    try {
+      const { search } = await import("@/lib/scraper/search");
+      results = await search("videos", q);
+    } catch {
+      throw first;
+    }
+    const seen = new Set<string>([videoId.trim()]);
+    for (const r of results) {
+      if (!r?.id || seen.has(r.id)) continue;
+      seen.add(r.id);
+      if (seen.size > 5) break;
+      try {
+        return await getStreamSource(r.id, { quick: true });
+      } catch {
+        /* coba kandidat berikutnya */
+      }
+    }
+    throw first;
+  }
 }

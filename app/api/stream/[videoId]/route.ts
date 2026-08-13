@@ -1,4 +1,4 @@
-import { getStreamSource, invalidateStream } from "@/lib/stream";
+import { invalidateStream, resolveStream } from "@/lib/stream";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -69,9 +69,10 @@ export async function GET(
   const { videoId } = await params;
   const url = new URL(req.url);
   const debug = url.searchParams.get("debug") === "1";
+  const q = url.searchParams.get("q");
 
   try {
-    let src = await getStreamSource(videoId);
+    let src = await resolveStream(videoId, q);
 
     if (debug) {
       let host = "";
@@ -104,7 +105,7 @@ export async function GET(
     if (up.status === 403 || up.status === 410) {
       invalidateStream(videoId);
       try {
-        src = await getStreamSource(videoId);
+        src = await resolveStream(videoId, q);
         up = await fetchUpstream(src.url, src.ua, range);
       } catch (e: any) {
         return jsonError(`stream gagal setelah retry: ${e?.message || up.status}`);
@@ -139,7 +140,7 @@ export async function HEAD(
 ) {
   try {
     const { videoId } = await params;
-    const src = await getStreamSource(videoId);
+    const src = await resolveStream(videoId, _req.url ? new URL(_req.url).searchParams.get("q") : null);
     return new Response(null, {
       status: 200,
       headers: {
