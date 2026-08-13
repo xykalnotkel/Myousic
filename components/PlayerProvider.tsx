@@ -273,58 +273,43 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setLoading(true);
 
       const q = [tr.title, tr.artist].filter(Boolean).join(" ");
-      const qs = q ? `?q=${encodeURIComponent(q)}` : "";
-      const streamPath = `/api/stream/${encodeURIComponent(tr.id)}${qs}`;
+      const streamPath = `/api/stream/${encodeURIComponent(tr.id)}${q ? `?q=${encodeURIComponent(q)}` : ""}`;
 
-      let useAudio = false;
+      // 1) YouTube IFrame dulu — request dari IP user, lolos bot-check Vercel
       try {
-        const info = await fetch(`/api/stream/${encodeURIComponent(tr.id)}?debug=1${q ? `&q=${encodeURIComponent(q)}` : ""}`, {
-          cache: "no-store",
-        }).then((r) => r.json());
-        if (gen !== genRef.current) return;
-        useAudio = !!info?.ok;
-      } catch {
-        useAudio = false;
-      }
-      if (gen !== genRef.current) return;
-
-      if (useAudio) {
-        engineRef.current = "audio";
-        try {
-          ytRef.current?.pause();
-        } catch {}
-        try {
-          audio.crossOrigin = "anonymous";
-          audio.src = streamPath;
-          audio.load();
-          await audio.play();
-        } catch (e: any) {
-          if (e?.name === "AbortError") return;
-          // lanjut ke iframe
-          useAudio = false;
-        }
-      }
-
-      if (!useAudio) {
-        if (gen !== genRef.current) return;
         engineRef.current = "yt";
         try {
           audio.pause();
           audio.removeAttribute("src");
           audio.load();
         } catch {}
-        try {
-          const yt = ensureYt();
-          yt.setVolume(volumeRef.current);
-          yt.setMuted(mutedRef.current);
-          await yt.load(tr.id);
-          if (gen !== genRef.current) return;
-          setLoading(false);
-        } catch (e: any) {
-          if (gen !== genRef.current) return;
-          setError(e?.message || "Gagal memutar");
-          setLoading(false);
-        }
+        const yt = ensureYt();
+        yt.setVolume(volumeRef.current);
+        yt.setMuted(mutedRef.current);
+        await yt.load(tr.id);
+        if (gen !== genRef.current) return;
+        setLoading(false);
+        setError(null);
+        return;
+      } catch (e: any) {
+        if (gen !== genRef.current) return;
+        // lanjut ke proxy stream
+      }
+
+      // 2) fallback: proxy InnerTube (kadang masih lolos untuk video non-Topic)
+      try {
+        engineRef.current = "audio";
+        ytRef.current?.pause();
+        audio.crossOrigin = "anonymous";
+        audio.src = streamPath;
+        audio.load();
+        await audio.play();
+        if (gen !== genRef.current) return;
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+        if (gen !== genRef.current) return;
+        setError(e?.message || "Gagal memutar. Gunakan tombol Lewati.");
+        setLoading(false);
       }
     },
     [ensureCtx, ensureYt]

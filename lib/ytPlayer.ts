@@ -73,11 +73,18 @@ export function createYtHandle(h: Handlers): YtHandle {
   let host: HTMLDivElement | null = null;
   let ready = false;
   let readyWait: Array<() => void> = [];
+  let pending: { resolve: () => void; reject: (e: Error) => void } | null = null;
 
   const whenReady = () =>
     ready && player
       ? Promise.resolve()
       : new Promise<void>((res) => readyWait.push(res));
+
+  const fail = (msg: string) => {
+    h.onError(msg);
+    pending?.reject(new Error(msg));
+    pending = null;
+  };
 
   return {
     async load(videoId: string) {
@@ -117,23 +124,47 @@ export function createYtHandle(h: Handlers): YtHandle {
             onStateChange: (e: any) => {
               const YT = window.YT;
               if (!YT) return;
-              if (e.data === YT.PlayerState.PLAYING) h.onPlay();
-              else if (e.data === YT.PlayerState.PAUSED) h.onPause();
+              if (e.data === YT.PlayerState.PLAYING) {
+                pending?.resolve();
+                pending = null;
+                h.onPlay();
+              } else if (e.data === YT.PlayerState.PAUSED) h.onPause();
               else if (e.data === YT.PlayerState.ENDED) h.onEnded();
             },
             onError: (e: any) => {
-              h.onError(ERR[e?.data] || `YouTube error ${e?.data ?? ""}`);
+              fail(ERR[e?.data] || `YouTube error ${e?.data ?? ""}`);
             },
           },
         });
         await whenReady();
-        return;
+        return new Promise<void>((resolve, reject) => {
+          pending = { resolve, reject };
+          try {
+            player.playVideo();
+          } catch {}
+          window.setTimeout(() => {
+            if (pending) {
+              // sudah play atau masih buffering — anggap sukses biar UI tidak menggantung
+              pending.resolve();
+              pending = null;
+            }
+          }, 8000);
+        });
       }
       await whenReady();
-      player.loadVideoById(videoId);
-      try {
-        player.playVideo();
-      } catch {}
+      return new Promise<void>((resolve, reject) => {
+        pending = { resolve, reject };
+        player.loadVideoById(videoId);
+        try {
+          player.playVideo();
+        } catch {}
+        window.setTimeout(() => {
+          if (pending) {
+            pending.resolve();
+            pending = null;
+          }
+        }, 8000);
+      });
     },
     play() {
       try {
