@@ -1,24 +1,27 @@
-# Myousic untuk Redmi A2 (APK Android)
+# Myousic untuk Redmi A2 (APK)
 
-Redmi A2 (Android Go / MIUI) **sering tidak bisa install PWA** dan **tidak punya widget web**. APK WebView ini membungkus https://myousic.vercel.app jadi aplikasi biasa + widget layar utama.
+WebView yang membungkus https://myousic.vercel.app + widget layar utama.
+Dibuat khusus HP Android Go / MIUI (Redmi A2) yang sering gagal pasang PWA.
 
-## Cara build APK (di komputer)
+**APK jadi:** `android/Myousic.apk` (atau file yang dikirim di chat).
 
-1. Install [Android Studio](https://developer.android.com/studio).
-2. **Open** folder `android` di repo ini.
-3. Tunggu Gradle sync.
-4. Menu **Build → Build Bundle(s) / APK(s) → Build APK(s)**.
-5. File APK: `android/app/build/outputs/apk/debug/app-debug.apk`
-6. Kirim ke HP (Telegram/USB), buka file, izinkan *Install unknown apps*.
+## Pasang di HP
 
-Minimum SDK 24 (Android 7). Redmi A2 (Android 12 Go) didukung.
+1. Kirim `Myousic.apk` ke HP (Telegram / USB / Drive).
+2. Buka file → izinkan **Install unknown apps** untuk aplikasi pengirim.
+3. Buka Myousic. Kalau muncul izin “abaikan hemat baterai” → **Izinkan**. Itu wajib di MIUI biar lagu tidak mati.
+4. Settings → Apps → Myousic → **Autostart ON**, Battery saver → **No restrictions**.
+5. Widget: tekan lama layar utama → Widget → **Myousic**.
 
-## Widget
+Jangan *Force stop* kalau mau tetap bunyi.
 
-Setelah install: tekan lama layar utama → **Widget** → **Myousic**. Ketuk widget = buka aplikasi.
+## Build sendiri
 
-## Catatan
+Tanpa Android Studio (butuh JDK 11 + Android build-tools 33):
 
-- Audio tetap dari situs (butuh internet).
-- Jangan *Force stop* aplikasi kalau mau tetap bunyi di background.
-- MIUI: Settings → Apps → Myousic → Autostart **ON**, Battery saver **No restrictions**.
+```bash
+export ANDROID_BUILD_TOOLS=/path/to/build-tools
+./android/build-apk.sh
+```
+
+Atau buka folder `android` di Android Studio → Build APK.

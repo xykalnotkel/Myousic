@@ -1,27 +1,28 @@
-plugins {
-    id "com.android.application"
-}
+apply plugin: "com.android.application"
+
 android {
     namespace "app.myousic"
-    compileSdk 34
+    compileSdk 33
     defaultConfig {
         applicationId "app.myousic"
         minSdk 24
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        targetSdk 33
+        versionCode 2
+        versionName "1.1"
     }
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt")
+        }
+        debug {
+            minifyEnabled false
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 }
+
 dependencies {
-    implementation "androidx.appcompat:appcompat:1.6.1"
 }

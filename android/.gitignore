@@ -1,6 +1,9 @@
 .gradle/
 build/
+build-out/
 local.properties
 *.iml
 .idea/
 .cxx/
+debug.keystore
+*.apk.idsig

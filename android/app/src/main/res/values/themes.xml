@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Myousic" parent="Theme.AppCompat.NoActionBar">
+    <style name="Theme.Myousic" parent="@android:style/Theme.DeviceDefault.NoActionBar">
         <item name="android:windowBackground">#050505</item>
         <item name="android:statusBarColor">#050505</item>
         <item name="android:navigationBarColor">#050505</item>
-        <item name="colorPrimary">#050505</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:colorPrimary">#050505</item>
+        <item name="android:colorPrimaryDark">#050505</item>
+        <item name="android:colorAccent">#FFFFFF</item>
     </style>
 </resources>
