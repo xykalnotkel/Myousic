@@ -317,10 +317,10 @@ export default function FullPlayer({
               </div>
 
               {tab === "viz" && (
-                <div className="h-52 sm:h-60 rounded-xl bg-white/[0.03] ring-1 ring-line overflow-hidden relative mb-6">
-                  <Visualizer variant="snake" className="absolute inset-0 w-full h-full" />
+                <div className="h-56 sm:h-72 rounded-xl bg-white/[0.03] ring-1 ring-line overflow-hidden relative mb-6">
+                  <Visualizer variant="ring" className="absolute inset-0 w-full h-full" />
                   <div className="absolute bottom-3 left-4 text-[10px] uppercase tracking-[0.3em] text-mut">
-                    Ular morphing — menari mengikuti beat
+                    Spektrum — mengikuti beat
                   </div>
                 </div>
               )}

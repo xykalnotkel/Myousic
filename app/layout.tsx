@@ -7,6 +7,7 @@ import PlayerBar from "@/components/PlayerBar";
 import MobileNav from "@/components/MobileNav";
 import Blobs from "@/components/Blobs";
 import { Icon, I } from "@/components/ui";
+import Logo from "@/components/Logo";
 import Link from "next/link";
 import { BRAND, TAGLINE, APP_DESC } from "@/lib/brand";
 
@@ -27,6 +28,10 @@ export const metadata: Metadata = {
   },
   description: APP_DESC,
   applicationName: BRAND,
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
+  },
 };
 
 export const viewport: Viewport = {
@@ -51,9 +56,7 @@ export default function RootLayout({
             {/* header mobile */}
             <header className="md:hidden sticky top-0 z-30 bg-black/80 backdrop-blur-md border-b border-line px-4 py-3 flex items-center justify-between">
               <Link href="/" className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-white text-black flex items-center justify-center">
-                  <Icon d={I.music} size={17} />
-                </div>
+                <Logo size={32} className="text-white rounded-[10px] ring-1 ring-white/15" />
                 <div className="leading-none">
                   <div className="font-extrabold tracking-tight">{BRAND}</div>
                   <div className="text-[9px] uppercase tracking-[0.3em] text-mut">Music</div>

@@ -93,14 +93,15 @@ export function createYtHandle(h: Handlers): YtHandle {
         host = document.createElement("div");
         host.id = "myousic-yt-host";
         host.setAttribute("aria-hidden", "true");
+        // Harus tetap di viewport — YouTube pause kalau player di luar layar.
         host.style.cssText =
-          "position:fixed;width:1px;height:1px;left:-9999px;top:0;overflow:hidden;opacity:0;pointer-events:none";
+          "position:fixed;right:10px;bottom:10px;width:42px;height:42px;opacity:0.02;overflow:hidden;pointer-events:none;z-index:1;border-radius:8px";
         document.body.appendChild(host);
         const mount = document.createElement("div");
         host.appendChild(mount);
         player = new window.YT.Player(mount, {
-          width: 1,
-          height: 1,
+          width: 42,
+          height: 42,
           videoId,
           host: "https://www.youtube.com",
           playerVars: {

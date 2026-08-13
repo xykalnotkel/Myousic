@@ -41,17 +41,28 @@ function Row({
 }
 
 export default function FxPanel() {
-  const { fx, setFx, engine } = usePlayer();
+  const { fx, setFx, engine, volume, setVolume, muted, toggleMute } = usePlayer();
   return (
     <div className="rounded-xl bg-white/[0.03] ring-1 ring-line p-4 space-y-5">
       <div>
-        <h3 className="text-sm font-extrabold tracking-tight">Mesin suara</h3>
+        <h3 className="text-sm font-extrabold tracking-tight">Atur suara</h3>
         <p className="text-[11px] text-mut mt-0.5">
-          {engine === "audio"
-            ? "Stream aktif — reverb & bass langsung ke audio."
-            : "Sedang pakai YouTube. Efek menyala otomatis begitu stream siap."}
+          Volume selalu aktif. Reverb & bass nyala penuh saat stream audio siap
+          {engine === "audio" ? " — sekarang aktif." : " (masih YouTube)."}
         </p>
       </div>
+      <Row
+        label="Volume"
+        value={muted ? 0 : volume}
+        min={0}
+        max={1}
+        step={0.01}
+        onChange={setVolume}
+        hint={muted ? "mute" : `${Math.round(volume * 100)}%`}
+      />
+      <button onClick={toggleMute} className="text-[11px] text-mut underline">
+        {muted ? "Nyalakan suara" : "Bisukan"}
+      </button>
       <Row
         label="Kehalusan"
         value={fx.smooth}

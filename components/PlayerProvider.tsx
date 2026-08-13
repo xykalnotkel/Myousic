@@ -17,6 +17,7 @@ import type { Track } from "@/lib/types";
 import { createYtHandle, type YtHandle } from "@/lib/ytPlayer";
 import { DEFAULT_FX, loadFx, makeImpulse, saveFx, type AudioFx } from "@/lib/audioFx";
 import { pickThumb } from "@/lib/thumbs";
+import { findAltIds } from "@/lib/alts";
 
 interface PlayerCtx {
   queue: Track[];
@@ -107,6 +108,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const volumeRef = useRef(0.8);
   const mutedRef = useRef(false);
   const fxRef = useRef<AudioFx>(DEFAULT_FX);
+  const wantPlayRef = useRef(false);
   indexRef.current = index;
   queueRef.current = queue;
   volumeRef.current = volume;
@@ -130,7 +132,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (engineRef.current === "audio") setDuration(audio.duration || 0);
     });
     audio.addEventListener("play", () => {
-      if (engineRef.current === "audio") setPlaying(true);
+      if (engineRef.current === "audio") {
+        wantPlayRef.current = true;
+        setPlaying(true);
+      }
     });
     audio.addEventListener("pause", () => {
       if (engineRef.current === "audio") setPlaying(false);
@@ -228,7 +233,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const ac = new AC();
       const src = ac.createMediaElementSource(audioRef.current!);
       const an = ac.createAnalyser();
-      an.fftSize = 2048;
+      an.fftSize = 1024;
       an.smoothingTimeConstant = 0.55;
       const bass = ac.createBiquadFilter();
       bass.type = "lowshelf";
@@ -265,12 +270,22 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const handle = createYtHandle({
       onPlay: () => {
         if (engineRef.current === "yt") {
+          wantPlayRef.current = true;
           setPlaying(true);
           setLoading(false);
+          ytRef.current?.setVolume(volumeRef.current);
         }
       },
       onPause: () => {
-        if (engineRef.current === "yt") setPlaying(false);
+        if (engineRef.current === "yt") {
+          setPlaying(false);
+          // YouTube sering pause sendiri saat tab hidden — nyalakan lagi
+          if (wantPlayRef.current && document.hidden) {
+            window.setTimeout(() => {
+              if (wantPlayRef.current && engineRef.current === "yt") ytRef.current?.play();
+            }, 250);
+          }
+        }
       },
       onEnded: () => {
         if (engineRef.current === "yt") CtxHolder.get()?.next(true);
@@ -302,8 +317,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
       const q = [tr.title, tr.artist].filter(Boolean).join(" ");
       const streamPath = `/api/stream/${encodeURIComponent(tr.id)}${q ? `?q=${encodeURIComponent(q)}` : ""}`;
+      wantPlayRef.current = true;
 
-      // 1) IFrame dulu — cepat, dari IP user
+      // 1) IFrame dulu — cepat, dari IP user. Kalau id mati, cari video lain.
+      const tryYt = async (id: string) => {
+        const yt = ensureYt();
+        yt.setVolume(volumeRef.current);
+        yt.setMuted(mutedRef.current);
+        await yt.load(id);
+      };
+
       try {
         setEngine("yt");
         engineRef.current = "yt";
@@ -312,15 +335,29 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           audio.removeAttribute("src");
           audio.load();
         } catch {}
-        const yt = ensureYt();
-        yt.setVolume(volumeRef.current);
-        yt.setMuted(mutedRef.current);
-        await yt.load(tr.id);
+        await tryYt(tr.id);
         if (gen !== genRef.current) return;
         setLoading(false);
         setError(null);
       } catch {
         if (gen !== genRef.current) return;
+        const alts = await findAltIds(tr.title, tr.artist, tr.id);
+        let ok = false;
+        for (const id of alts) {
+          if (gen !== genRef.current) return;
+          try {
+            await tryYt(id);
+            ok = true;
+            break;
+          } catch {
+            /* coba id berikutnya */
+          }
+        }
+        if (!ok) setError("Video tidak tersedia. Mencoba stream / lewati lagu.");
+        else {
+          setLoading(false);
+          setError(null);
+        }
       }
 
       // 2) di belakang: coba stream supaya visualizer + FX nyata
@@ -399,15 +436,25 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const toggle = useCallback(() => {
     if (engineRef.current === "yt" && ytRef.current) {
-      if (playing) ytRef.current.pause();
-      else ytRef.current.play();
+      if (playing) {
+        wantPlayRef.current = false;
+        ytRef.current.pause();
+      } else {
+        wantPlayRef.current = true;
+        ytRef.current.play();
+      }
       return;
     }
     const audio = audioRef.current;
     if (!audio || !audio.src) return;
     ensureCtx();
-    if (audio.paused) audio.play().catch(() => {});
-    else audio.pause();
+    if (audio.paused) {
+      wantPlayRef.current = true;
+      audio.play().catch(() => {});
+    } else {
+      wantPlayRef.current = false;
+      audio.pause();
+    }
   }, [ensureCtx, playing]);
 
   const next = useCallback(

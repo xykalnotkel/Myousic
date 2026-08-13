@@ -138,20 +138,20 @@ export default async function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+          <div className="flex gap-5 overflow-x-auto no-scrollbar pb-2 -mx-1 px-1">
             {indoArtists.map((a, i) => (
               <Link
                 key={`${a.browseId}-${i}`}
                 href={`/artist/${a.browseId}`}
-                className="group flex flex-col items-center text-center"
+                className="group shrink-0 w-24 sm:w-28 flex flex-col items-center text-center"
               >
                 <Cover
-                  src={pickThumb(a.thumbnails, 240)}
+                  src={pickThumb(a.thumbnails, 200)}
                   title={a.title}
                   size={112}
                   circle
-                  className="ring-2 ring-white/10 group-hover:ring-white/40 transition-all w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28"
-                  sizeClass="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28"
+                  sizeClass="w-24 h-24 sm:w-28 sm:h-28"
+                  className="ring-2 ring-white/10 group-hover:ring-white/40 transition-all"
                 />
                 <p className="mt-2.5 text-sm font-semibold truncate w-full">{a.title}</p>
                 <p className="text-[11px] text-mut truncate w-full">{a.subscribers || "Artis"}</p>

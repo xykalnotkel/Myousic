@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon, I } from "./ui";
+// panah dihapus — slider auto + geser HP
 
 export interface Slide {
   href: string;
@@ -85,32 +86,14 @@ export default function BannerSlider({ slides }: { slides: Slide[] }) {
       </div>
 
       {n > 1 && (
-        <>
-          <button
-            onClick={() => setI((x) => (x - 1 + n) % n)}
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/50 hover:bg-white/15 flex items-center justify-center text-white"
-            aria-label="Slide sebelumnya"
-          >
-            <Icon d={I.chevronL} size={20} />
-          </button>
-          <button
-            onClick={() => setI((x) => (x + 1) % n)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/50 hover:bg-white/15 flex items-center justify-center text-white"
-            aria-label="Slide berikutnya"
-          >
-            <Icon d={I.chevronR} size={20} />
-          </button>
-          <div className="absolute bottom-4 left-0 right-0 z-10 flex justify-center gap-2">
-            {slides.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setI(idx)}
-                className={`h-1.5 rounded-full transition-all ${idx === i ? "w-7 bg-white" : "w-1.5 bg-white/35 hover:bg-white/60"}`}
-                aria-label={`Slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-        </>
+        <div className="absolute bottom-4 left-0 right-0 z-10 flex justify-center gap-1.5 pointer-events-none">
+          {slides.map((_, idx) => (
+            <span
+              key={idx}
+              className={`h-1 rounded-full transition-all ${idx === i ? "w-6 bg-white" : "w-1 bg-white/30"}`}
+            />
+          ))}
+        </div>
       )}
     </section>
   );

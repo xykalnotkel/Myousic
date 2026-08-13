@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon, I } from "./ui";
+import Logo from "./Logo";
 import { BRAND } from "@/lib/brand";
 
 const NAV = [

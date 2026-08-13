@@ -30,25 +30,25 @@ export default async function ArtistsPage() {
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-extrabold tracking-tight">Artis Indonesia</h1>
-        <p className="text-mut text-sm mt-1">Kurasi Tanah Air — foto bulat, tanpa campur artis luar.</p>
+        <p className="text-mut text-sm mt-1">Geser ke kanan — foto bulat, kurasi Tanah Air.</p>
       </div>
 
       {artists.length === 0 ? (
         <div className="text-mut text-sm py-16 text-center">Gagal memuat daftar artis. Coba lagi nanti.</div>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-8">
+        <div className="flex gap-5 overflow-x-auto no-scrollbar pb-4 -mx-1 px-1">
           {artists.map((a, i) => (
             <Link
               key={`${a.browseId}-${i}`}
               href={`/artist/${a.browseId}`}
-              className="group flex flex-col items-center text-center"
+              className="group shrink-0 w-28 sm:w-32 flex flex-col items-center text-center"
             >
               <Cover
                 src={pickThumb(a.thumbnails, 240)}
                 title={a.name}
                 size={128}
                 circle
-                sizeClass="w-24 h-24 sm:w-28 sm:h-28"
+                sizeClass="w-28 h-28 sm:w-32 sm:h-32"
                 className="ring-2 ring-white/10 group-hover:ring-white/40 group-hover:scale-[1.03] transition-all"
               />
               <p className="mt-3 text-sm font-semibold truncate w-full">{a.name}</p>
