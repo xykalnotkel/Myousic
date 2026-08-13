@@ -264,35 +264,7 @@ export async function getStreamSource(
   );
 }
 
-// Lagu "Topic" YouTube Music sering diblokir dari IP Vercel.
-// Cari video resmi/cover yang masih mengembalikan URL, lalu putar itu.
-export async function resolveStream(
-  videoId: string,
-  query?: string | null
-): Promise<StreamSource> {
-  try {
-    return await getStreamSource(videoId);
-  } catch (first) {
-    const q = query?.trim();
-    if (!q) throw first;
-    let results: { id?: string }[] = [];
-    try {
-      const { search } = await import("@/lib/scraper/search");
-      results = await search("videos", q);
-    } catch {
-      throw first;
-    }
-    const seen = new Set<string>([videoId.trim()]);
-    for (const r of results) {
-      if (!r?.id || seen.has(r.id)) continue;
-      seen.add(r.id);
-      if (seen.size > 5) break;
-      try {
-        return await getStreamSource(r.id, { quick: true });
-      } catch {
-        /* coba kandidat berikutnya */
-      }
-    }
-    throw first;
-  }
+export async function resolveStream(videoId: string, _query?: string | null): Promise<StreamSource> {
+  // Jangan ganti video id. Kalau stream id ini gagal, biarkan pemutar yang handle.
+  return getStreamSource(videoId);
 }

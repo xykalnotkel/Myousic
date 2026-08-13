@@ -17,7 +17,6 @@ import type { Track } from "@/lib/types";
 import { createYtHandle, type YtHandle } from "@/lib/ytPlayer";
 import { DEFAULT_FX, loadFx, makeImpulse, saveFx, type AudioFx } from "@/lib/audioFx";
 import { pickThumb } from "@/lib/thumbs";
-import { findAltIds } from "@/lib/alts";
 
 interface PlayerCtx {
   queue: Track[];
@@ -339,7 +338,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       }
       setLoading(true);
 
-      const q = [tr.title, tr.artist].filter(Boolean).join(" ");
       wantPlayRef.current = true;
 
       const tryYt = async (id: string) => {
@@ -355,7 +353,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
       const tryStream = (id: string) =>
         new Promise<boolean>((resolve) => {
-          const src = `/api/stream/${encodeURIComponent(id)}${q ? `?q=${encodeURIComponent(q)}` : ""}`;
+          const src = `/api/stream/${encodeURIComponent(id)}`;
           const ok = () => {
             cleanup();
             resolve(true);
@@ -419,17 +417,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      // Putar ID asli dulu. Alternatif cuma kalau embed+stream gagal — biar lagunya tidak ketuker.
-      let ok = await playId(tr.id);
-      if (!ok && gen === genRef.current) {
-        setError("Mencari versi yang sama…");
-        const alts = await findAltIds(tr.title, tr.artist, tr.id);
-        for (const id of alts) {
-          if (gen !== genRef.current) return;
-          ok = await playId(id);
-          if (ok) break;
-        }
-      }
+      // Hanya putar ID yang diklik. Jangan ganti ke MV/lagu lain.
+      const ok = await playId(tr.id);
 
       if (gen !== genRef.current) return;
       if (ok) {
@@ -487,7 +476,19 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           try {
             const r = await fetch(`/api/search?q=${encodeURIComponent(qq)}&type=songs`, { cache: "no-store" });
             const d = await r.json();
-            const first = (d.results || []).find((x: { id?: string }) => x.id);
+            const list = (d.results || []) as { id?: string; title?: string; artist?: string; thumbnails?: string[] }[];
+            const scored = list
+              .filter((x) => x.id)
+              .map((x) => {
+                const hay = `${x.title || ""} ${x.artist || ""}`.toLowerCase();
+                let s = 0;
+                if (t?.title && hay.includes(String(t.title).toLowerCase())) s += 40;
+                if (t?.artist && hay.includes(String(t.artist).toLowerCase())) s += 25;
+                if (t?.title && String(x.title || "").toLowerCase() === String(t.title).toLowerCase()) s += 40;
+                return { x, s };
+              })
+              .sort((a, b) => b.s - a.s);
+            const first = (scored[0] && scored[0].s >= 25 ? scored[0].x : list.find((x) => x.id));
             if (first?.id) {
               resolved.push({
                 ...t,

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { pickThumb, sizedThumb } from "@/lib/thumbs";
 
-// ---------- Ikon (Material-style 24×24, fill — pasti tampil) ----------
 export function Icon({
   d,
   size = 22,
@@ -35,8 +34,7 @@ export const I = {
   prev: "M6 6h2v12H6zm3.5 6l8.5 6V6z",
   shuffle:
     "M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z",
-  repeat:
-    "M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z",
+  repeat: "M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z",
   repeatOne:
     "M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zM13 15V9h-1l-2 1v1h1.5v4H13z",
   volume:
@@ -51,11 +49,9 @@ export const I = {
     "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z",
   queue:
     "M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z",
-  music:
-    "M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z",
+  music: "M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z",
   arrowDown: "M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z",
-  playlist:
-    "M4 10h12v2H4zm0-4h12v2H4zm0 8h8v2H4zm10 0v6l5-3z",
+  playlist: "M4 10h12v2H4zm0-4h12v2H4zm0 8h8v2H4zm10 0v6l5-3z",
   add: "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z",
   fx: "M7 18h2V6H7v12zm4 4h2V2h-2v20zm-8-8h2v-4H3v4zm12 4h2V10h-2v8zm4-8h2V8h-2v2z",
   library:
@@ -64,23 +60,6 @@ export const I = {
   chevronR: "M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z",
   expand: "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z",
 };
-
-const FALLBACK_ARTS = [
-  "/illustrations/hero-vinyl.jpg",
-  "/illustrations/hero-headphone.jpg",
-  "/illustrations/hero-stage.jpg",
-  "/illustrations/hero-wave.jpg",
-  "/illustrations/hero-rinjani.jpg",
-  "/illustrations/vinyl-wave.webp",
-  "/illustrations/headphone-peaks.webp",
-  "/illustrations/mic-bloom.webp",
-];
-
-function fallbackArt(title: string): string {
-  let h = 0;
-  for (let i = 0; i < title.length; i++) h = (h * 31 + title.charCodeAt(i)) >>> 0;
-  return FALLBACK_ARTS[h % FALLBACK_ARTS.length];
-}
 
 export function Cover({
   src,
@@ -102,45 +81,35 @@ export function Cover({
   circle?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  const shape = circle ? "rounded-full" : rounded;
   const fill = Boolean(sizeClass) || /\bw-full\b|\baspect-/.test(className);
   const px = fill ? 240 : size <= 56 ? 120 : size <= 120 ? 240 : 480;
   const url = !failed ? sizedThumb(src, px) : undefined;
-  const fb = fallbackArt(title);
+  const shape = circle ? "rounded-full" : rounded;
 
   return (
     <div
-      className={`relative overflow-hidden bg-elev shrink-0 ${shape} ${sizeClass ?? ""} ${className}`}
+      className={`overflow-hidden bg-[#121212] shrink-0 ${shape} ${sizeClass ?? ""} ${className}`}
       style={
         fill
-          ? { aspectRatio: "1 / 1", maxWidth: "100%" }
-          : { width: size, height: size, aspectRatio: "1 / 1", flexShrink: 0 }
+          ? { aspectRatio: "1 / 1", width: "100%", minHeight: 48 }
+          : { width: size, height: size, minWidth: size, minHeight: size, flexShrink: 0 }
       }
     >
-      {!loaded && <div className="absolute inset-0 skeleton" />}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={url || fb}
+        src={url || ""}
         alt={title}
         decoding="async"
         loading={priority ? "eager" : "lazy"}
-        fetchPriority={priority ? "high" : "low"}
-        ref={(el) => {
-          if (el?.complete && el.naturalWidth > 0) setLoaded(true);
-        }}
-        onLoad={() => setLoaded(true)}
-        onError={() => {
-          if (!failed) setFailed(true);
-        }}
-        className={!url ? "opacity-70" : ""}
+        onError={() => setFailed(true)}
+        className="cover-img"
         style={{
-          position: "absolute",
-          inset: 0,
           width: "100%",
           height: "100%",
           objectFit: "cover",
           objectPosition: "center",
-          display: "block",
+          display: url ? "block" : "none",
+          maxWidth: "none",
         }}
       />
     </div>
