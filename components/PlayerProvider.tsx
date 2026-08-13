@@ -649,9 +649,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const n = (window as any).MyousicNative;
-      if (n?.nowPlaying) n.nowPlaying(current?.title || "", current?.artist || "");
+      if (n?.nowPlaying) n.nowPlaying(current?.title || "", current?.artist || "", playing ? "1" : "0");
     } catch {}
-  }, [current]);
+  }, [current, playing]);
 
   // Media Session — kontrol dari lockscreen / notifikasi (background play)
   useEffect(() => {

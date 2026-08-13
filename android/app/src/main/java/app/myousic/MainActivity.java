@@ -3,8 +3,11 @@ package app.myousic;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ShortcutInfo;
+import android.content.pm.ShortcutManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -69,6 +72,7 @@ public class MainActivity extends Activity {
         setContentView(root);
         startKeepAlive();
         maybeAskBattery();
+        maybePinShortcut();
     }
 
     private FrameLayout makeSplash() {
@@ -133,6 +137,27 @@ public class MainActivity extends Activity {
         try {
             if (Build.VERSION.SDK_INT >= 26) startForegroundService(i);
             else startService(i);
+        } catch (Exception ignored) {}
+    }
+
+    private void maybePinShortcut() {
+        if (Build.VERSION.SDK_INT < 26) return;
+        SharedPreferences p = getSharedPreferences(PlayerWidget.PREFS, MODE_PRIVATE);
+        if (p.getBoolean("asked_pin", false)) return;
+        p.edit().putBoolean("asked_pin", true).apply();
+        try {
+            ShortcutManager sm = getSystemService(ShortcutManager.class);
+            if (sm == null || !sm.isRequestPinShortcutSupported()) return;
+            Intent launch = new Intent(this, MainActivity.class);
+            launch.setAction(Intent.ACTION_MAIN);
+            launch.addCategory(Intent.CATEGORY_LAUNCHER);
+            ShortcutInfo info = new ShortcutInfo.Builder(this, "myousic-home")
+                    .setShortLabel("Myousic")
+                    .setLongLabel("Buka Myousic")
+                    .setIcon(Icon.createWithResource(this, R.drawable.ic_logo))
+                    .setIntent(launch)
+                    .build();
+            sm.requestPinShortcut(info, null);
         } catch (Exception ignored) {}
     }
 

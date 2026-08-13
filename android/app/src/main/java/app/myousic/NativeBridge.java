@@ -11,8 +11,13 @@ public class NativeBridge {
     }
 
     @JavascriptInterface
-    public void nowPlaying(String title, String artist) {
+    public void nowPlaying(String title, String artist, String playing) {
         PlayerWidget.pushTrack(app, title, artist);
+        boolean on = "1".equals(playing) || "true".equalsIgnoreCase(playing);
+        app.getSharedPreferences(PlayerWidget.PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean("playing", on)
+                .apply();
         KeepAliveService.refresh(app);
     }
 }

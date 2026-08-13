@@ -8,6 +8,8 @@ import android.content.MutableContextWrapper;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
@@ -43,6 +45,19 @@ public class MyousicApp extends Application {
 
     public void setReady(Ready r) {
         ready = r;
+    }
+
+    public void runJs(final String js) {
+        final WebView w = web;
+        if (w == null || js == null) return;
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    w.evaluateJavascript(js, null);
+                } catch (Throwable ignored) {}
+            }
+        });
     }
 
     public synchronized WebView attach(Activity a) {
